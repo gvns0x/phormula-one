@@ -1,0 +1,118 @@
+.controller-view {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: #1a1a1a;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.controller-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: #222;
+  flex-shrink: 0;
+}
+
+.room-input {
+  width: 100px;
+  padding: 8px 12px;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  text-align: center;
+  border: 2px solid #444;
+  border-radius: 6px;
+  background: #111;
+  color: #fff;
+}
+
+.connect-btn {
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  background: #cc0000;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+}
+
+.connect-btn:disabled {
+  opacity: 0.6;
+}
+
+.status {
+  font-size: 12px;
+  color: #888;
+}
+
+.status-connected {
+  color: #0a0;
+}
+
+.status-error {
+  color: #f44;
+}
+
+.error {
+  font-size: 12px;
+  color: #f44;
+}
+
+.speed-display {
+  margin-left: auto;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: #0a0;
+  min-width: 90px;
+  text-align: right;
+}
+
+.touch-zones {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 100px;
+  grid-template-areas:
+    "steer-area steer-area"
+    "brake throttle";
+  gap: 0;
+  min-height: 0;
+}
+
+.zone {
+  position: relative;
+}
+
+.steer-area {
+  grid-area: steer-area;
+  background: rgba(100, 100, 255, 0.08);
+}
+
+.throttle {
+  grid-area: throttle;
+  background: rgba(0, 200, 0, 0.15);
+}
+
+.brake {
+  grid-area: brake;
+  background: rgba(200, 0, 0, 0.15);
+}
+
+@media (max-width: 768px) {
+  .steer-area:active {
+    background: rgba(100, 100, 255, 0.2);
+  }
+  .throttle:active {
+    background: rgba(0, 200, 0, 0.3);
+  }
+  .brake:active {
+    background: rgba(200, 0, 0, 0.3);
+  }
+}
