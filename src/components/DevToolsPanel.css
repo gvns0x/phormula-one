@@ -1,0 +1,142 @@
+.devtools-wrapper {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 100;
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.devtools-toggle {
+  background: rgba(0, 0, 0, 0.7);
+  color: #0f0;
+  border: 1px solid rgba(0, 255, 0, 0.3);
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-family: monospace;
+  font-size: 13px;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+  transition: background 0.15s;
+}
+
+.devtools-panel {
+  background: rgba(10, 10, 10, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  width: 320px;
+  max-height: 70vh;
+  overflow-y: auto;
+  backdrop-filter: blur(12px);
+  font-family: monospace;
+  font-size: 12px;
+  color: #ddd;
+}
+
+.devtools-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 13px;
+  font-weight: 600;
+  color: #0f0;
+}
+
+.devtools-reset {
+  background: rgba(255, 60, 60, 0.25);
+  color: #ff6b6b;
+  border: 1px solid rgba(255, 60, 60, 0.3);
+  padding: 3px 10px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 11px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.devtools-reset:hover {
+  background: rgba(255, 60, 60, 0.4);
+}
+
+.devtools-body {
+  padding: 8px 14px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.devtools-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.devtools-label {
+  flex: 0 0 120px;
+  font-size: 11px;
+  color: #aaa;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.devtools-slider {
+  flex: 1;
+  height: 4px;
+  accent-color: #0f0;
+  cursor: pointer;
+}
+
+.devtools-number {
+  width: 64px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  color: #fff;
+  font-family: monospace;
+  font-size: 12px;
+  padding: 3px 6px;
+  text-align: right;
+}
+
+.devtools-number:focus {
+  outline: none;
+  border-color: #0f0;
+}
+
+/* Scrollbar */
+.devtools-panel::-webkit-scrollbar {
+  width: 4px;
+}
+.devtools-panel::-webkit-scrollbar-track {
+  background: transparent;
+}
+.devtools-panel::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 2px;
+}
+
+@media (max-width: 768px) {
+  .devtools-toggle:hover {
+    background: rgba(0, 0, 0, 0.85);
+  }
+
+  .devtools-panel {
+    width: 280px;
+  }
+
+  .devtools-label {
+    flex: 0 0 100px;
+    font-size: 10px;
+  }
+
+  .devtools-number {
+    width: 54px;
+    font-size: 11px;
+  }
+}

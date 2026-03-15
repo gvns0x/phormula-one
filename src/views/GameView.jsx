@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { createGameEngine } from '../game/GameEngine';
 import { useControllerSync } from '../networking/useControllerSync';
+import { DevToolsPanel } from '../components/DevToolsPanel';
 import './GameView.css';
 
 export function GameView() {
@@ -43,8 +44,9 @@ export function GameView() {
           {connectionStatus === 'connected' && 'Connected'}
           {connectionStatus === 'error' && (errorMessage || 'Error')}
         </div>
-        <div className="speed-display">{Math.round(speed * 3.6)} km/h</div>
+        <DevToolsPanel />
       </div>
+      <div className="speed-display">{Math.round(speed * 3.6)} km/h</div>
       <canvas ref={canvasRef} className="game-canvas" />
     </div>
   );

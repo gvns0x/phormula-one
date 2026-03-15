@@ -3,9 +3,9 @@ import * as CANNON from 'cannon-es';
 import { createTrack } from './Track';
 import { createCar } from './Car';
 import { createChaseCamera } from './Camera';
+import { tuning } from './tuning';
 
 const FIXED_DT = 1 / 60;
-const MAX_SPEED = 85;
 const CAR_MODEL_URL = '/models/f1-car.glb';
 
 function createGroundTexture() {
@@ -112,7 +112,7 @@ export function createGameEngine(canvasRef, getInput, options) {
     sync();
     const speed = getSpeed();
     options?.onTick?.({ speed });
-    const speedRatio = Math.min(Math.abs(speed) / MAX_SPEED, 1);
+    const speedRatio = Math.min(Math.abs(speed) / tuning.maxSpeed, 1);
     chaseCam.update(carGroup, speedRatio);
     renderer.render(scene, camera);
   }
@@ -136,5 +136,5 @@ export function createGameEngine(canvasRef, getInput, options) {
     rafId = null;
   }
 
-  return { start, stop, resize };
+  return { start, stop, resize, tuning };
 }

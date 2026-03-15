@@ -6,15 +6,12 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { tuning } from './tuning';
 
 const WIDTH = 2;
 const HEIGHT = 0.6;
 const DEPTH = 4.2;
 const MASS = 700;
-const STEER_MAX = 0.35;
-const ENGINE_FORCE = 12000;
-const BRAKE_FORCE = 80;
-const MAX_SPEED = 85;
 
 export function createCar(world, startPos) {
   const group = new THREE.Group();
@@ -45,28 +42,38 @@ export function createCar(world, startPos) {
   let steerAngle = 0;
   let lastSpeed = 0;
   const forward = new CANNON.Vec3();
+  const right = new CANNON.Vec3();
 
   function applyInput(steer, throttle, brake, dt) {
-    steerAngle = THREE.MathUtils.clamp(-steer * STEER_MAX, -STEER_MAX, STEER_MAX);
+    const { steerMax, steerRate, brakeForce, engineForce, maxSpeed, coastingDecay, lateralGrip } = tuning;
+    bodyPhys.linearDamping = tuning.linearDamping;
+
+    steerAngle = THREE.MathUtils.clamp(-steer * steerMax, -steerMax, steerMax);
     bodyPhys.quaternion.vmult(new CANNON.Vec3(0, 0, 1), forward);
 
     const speed = bodyPhys.velocity.dot(forward);
     lastSpeed = speed;
-    if (throttle > 0 && speed < MAX_SPEED) {
-      const acc = (ENGINE_FORCE / MASS) * throttle * dt;
+    if (throttle > 0 && speed < maxSpeed) {
+      const acc = (engineForce / MASS) * throttle * dt;
       bodyPhys.velocity.x += forward.x * acc;
       bodyPhys.velocity.z += forward.z * acc;
     }
     if (brake > 0) {
-      const damp = 1 - Math.min(brake * BRAKE_FORCE * dt, 0.95);
+      const damp = 1 - Math.min(brake * brakeForce * dt, 0.95);
       bodyPhys.velocity.x *= damp;
       bodyPhys.velocity.z *= damp;
     }
     if (throttle === 0 && brake === 0 && speed > 0.5) {
-      bodyPhys.velocity.x *= (1 - 0.3 * dt);
-      bodyPhys.velocity.z *= (1 - 0.3 * dt);
+      bodyPhys.velocity.x *= (1 - coastingDecay * dt);
+      bodyPhys.velocity.z *= (1 - coastingDecay * dt);
     }
-    bodyPhys.angularVelocity.y = steerAngle * 4 * (speed > 1 ? 1 : speed);
+    bodyPhys.angularVelocity.y = steerAngle * steerRate * (speed > 1 ? 1 : speed);
+
+    bodyPhys.quaternion.vmult(new CANNON.Vec3(1, 0, 0), right);
+    const lateralSpeed = bodyPhys.velocity.dot(right);
+    const gripFactor = Math.min(lateralGrip * dt, 1);
+    bodyPhys.velocity.x -= right.x * lateralSpeed * gripFactor;
+    bodyPhys.velocity.z -= right.z * lateralSpeed * gripFactor;
   }
 
   function sync() {
