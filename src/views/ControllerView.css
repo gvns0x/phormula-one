@@ -64,6 +64,24 @@
   color: #f44;
 }
 
+.tilt-btn {
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  background: #336;
+  color: #aaf;
+  border: 1px solid #558;
+  border-radius: 6px;
+}
+
+.tilt-label {
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #8bf;
+  letter-spacing: 0.15em;
+}
+
 .speed-display {
   margin-left: auto;
   font-size: 18px;
@@ -93,6 +111,35 @@
 .steer-area {
   grid-area: steer-area;
   background: rgba(100, 100, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.steer-area.tilt-mode {
+  background: rgba(80, 80, 200, 0.05);
+}
+
+.tilt-indicator-track {
+  width: 80%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+  position: relative;
+  overflow: visible;
+}
+
+.tilt-indicator-thumb {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 20px;
+  height: 20px;
+  margin-left: -10px;
+  margin-top: -10px;
+  border-radius: 50%;
+  background: rgba(130, 160, 255, 0.7);
+  transition: transform 0.05s linear;
 }
 
 .throttle {

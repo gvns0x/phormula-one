@@ -50,10 +50,14 @@ export function createGamePeer(signaling, callbacks) {
     };
 
     signaling.on('offer', async ({ offer }) => {
-      await pc.setRemoteDescription(new RTCSessionDescription(offer));
-      const answer = await pc.createAnswer();
-      await pc.setLocalDescription(answer);
-      signaling.sendAnswer(answer);
+      try {
+        await pc.setRemoteDescription(new RTCSessionDescription(offer));
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+        signaling.sendAnswer(answer);
+      } catch (_e) {
+        onConnected = null;
+      }
     });
   }
 

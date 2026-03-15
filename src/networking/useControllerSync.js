@@ -7,28 +7,39 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { createSignalingClient } from './signalingClient';
 import { createGamePeer } from './webrtcClient';
 
-const WS_URL = `ws://${typeof window !== 'undefined' ? window.location.hostname : 'localhost'}:3001/ws`;
+const WS_URL = typeof window !== 'undefined'
+  ? `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/signal`
+  : 'ws://localhost:3001/signal';
 
 const defaultInput = { steer: 0, throttle: 0, brake: 0 };
 
 function useKeyboardInput() {
   const kbRef = useRef(defaultInput);
   useEffect(() => {
+    const pressed = new Set();
+
+    const update = () => {
+      const left = pressed.has('arrowleft') || pressed.has('a');
+      const right = pressed.has('arrowright') || pressed.has('d');
+      kbRef.current = {
+        steer: (left && right) ? 0 : left ? -1 : right ? 1 : 0,
+        throttle: (pressed.has('arrowup') || pressed.has('w')) ? 1 : 0,
+        brake: (pressed.has('arrowdown') || pressed.has('s')) ? 1 : 0,
+      };
+    };
+
     const onKeyDown = (e) => {
+      if (e.repeat) return;
       const key = e.key.toLowerCase();
-      if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(e.key)) e.preventDefault();
-      if (key === 'arrowup' || key === 'w') kbRef.current = { ...kbRef.current, throttle: 1 };
-      if (key === 'arrowdown' || key === 's') kbRef.current = { ...kbRef.current, brake: 1 };
-      if (key === 'arrowleft' || key === 'a') kbRef.current = { ...kbRef.current, steer: -1 };
-      if (key === 'arrowright' || key === 'd') kbRef.current = { ...kbRef.current, steer: 1 };
+      if (['arrowup','arrowdown','arrowleft','arrowright'].includes(key)) e.preventDefault();
+      pressed.add(key);
+      update();
     };
     const onKeyUp = (e) => {
-      const key = e.key.toLowerCase();
-      if (key === 'arrowup' || key === 'w') kbRef.current = { ...kbRef.current, throttle: 0 };
-      if (key === 'arrowdown' || key === 's') kbRef.current = { ...kbRef.current, brake: 0 };
-      if (key === 'arrowleft' || key === 'a') kbRef.current = { ...kbRef.current, steer: 0 };
-      if (key === 'arrowright' || key === 'd') kbRef.current = { ...kbRef.current, steer: 0 };
+      pressed.delete(e.key.toLowerCase());
+      update();
     };
+
     window.addEventListener('keydown', onKeyDown);
     window.addEventListener('keyup', onKeyUp);
     return () => {

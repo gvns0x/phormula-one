@@ -27,14 +27,14 @@ function createGroundTexture() {
   }
   const tex = new THREE.CanvasTexture(canvas);
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-  tex.repeat.set(80, 80);
+  tex.repeat.set(120, 120);
   return tex;
 }
 
 export function createGameEngine(canvasRef, getInput, options) {
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x87ceeb);
-  scene.fog = new THREE.Fog(0x87ceeb, 150, 500);
+  scene.fog = new THREE.Fog(0x87ceeb, 200, 700);
 
   const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 2000);
   camera.position.set(0, 10, 20);
@@ -46,17 +46,19 @@ export function createGameEngine(canvasRef, getInput, options) {
   const ambient = new THREE.AmbientLight(0x404040);
   scene.add(ambient);
   const sun = new THREE.DirectionalLight(0xffffff, 1);
-  sun.position.set(50, 100, 50);
+  sun.position.set(200, 300, -50);
+  sun.target.position.set(110, 0, 130);
   sun.castShadow = true;
-  sun.shadow.mapSize.width = 2048;
-  sun.shadow.mapSize.height = 2048;
-  sun.shadow.camera.left = -200;
-  sun.shadow.camera.right = 200;
-  sun.shadow.camera.top = 200;
-  sun.shadow.camera.bottom = -200;
+  sun.shadow.mapSize.width = 4096;
+  sun.shadow.mapSize.height = 4096;
+  sun.shadow.camera.left = -450;
+  sun.shadow.camera.right = 450;
+  sun.shadow.camera.top = 450;
+  sun.shadow.camera.bottom = -450;
   sun.shadow.camera.near = 0.5;
-  sun.shadow.camera.far = 500;
+  sun.shadow.camera.far = 800;
   scene.add(sun);
+  scene.add(sun.target);
 
   const world = new CANNON.World();
   world.gravity.set(0, -25, 0);
@@ -72,7 +74,7 @@ export function createGameEngine(canvasRef, getInput, options) {
 
   // Visible ground with grass grid texture
   const groundMesh = new THREE.Mesh(
-    new THREE.PlaneGeometry(800, 800),
+    new THREE.PlaneGeometry(1200, 1200),
     new THREE.MeshStandardMaterial({ map: createGroundTexture(), roughness: 1 })
   );
   groundMesh.rotation.x = -Math.PI / 2;
@@ -80,11 +82,13 @@ export function createGameEngine(canvasRef, getInput, options) {
   groundMesh.receiveShadow = true;
   scene.add(groundMesh);
 
-  const { group: trackGroup, startPosition } = createTrack();
+  const { group: trackGroup, startPosition, startRotationY, startTangent, isOffTrack } = createTrack();
   scene.add(trackGroup);
 
-  const { group: carGroup, applyInput, sync, loadModel, getSpeed } = createCar(world, startPosition);
+  const { group: carGroup, applyInput, sync, loadModel, getSpeed, reset: carReset } = createCar(world, startPosition, startRotationY);
   scene.add(carGroup);
+
+  let prevSignedDist = 0;
 
   loadModel(CAR_MODEL_URL);
 
@@ -92,6 +96,21 @@ export function createGameEngine(canvasRef, getInput, options) {
 
   let rafId = null;
   let acc = 0;
+  let droneView = false;
+
+  const DRONE_POS = new THREE.Vector3(68, 400, 24);
+  const DRONE_LOOK = new THREE.Vector3(68, 0, 24);
+  const DRONE_FOV = 60;
+
+  function setDroneView(enabled) {
+    droneView = enabled;
+    if (droneView) {
+      camera.fov = DRONE_FOV;
+      camera.updateProjectionMatrix();
+      camera.position.copy(DRONE_POS);
+      camera.lookAt(DRONE_LOOK);
+    }
+  }
 
   function resize() {
     const w = canvasRef.current?.clientWidth ?? 1;
@@ -111,9 +130,19 @@ export function createGameEngine(canvasRef, getInput, options) {
     }
     sync();
     const speed = getSpeed();
-    options?.onTick?.({ speed });
-    const speedRatio = Math.min(Math.abs(speed) / tuning.maxSpeed, 1);
-    chaseCam.update(carGroup, speedRatio);
+
+    const dx = carGroup.position.x - startPosition.x;
+    const dz = carGroup.position.z - startPosition.z;
+    const signedDist = dx * startTangent.x + dz * startTangent.z;
+    const crossed = prevSignedDist < 0 && signedDist >= 0;
+    prevSignedDist = signedDist;
+
+    const offTrack = isOffTrack(carGroup.position.x, carGroup.position.z);
+    options?.onTick?.({ speed, crossed, offTrack });
+    if (!droneView) {
+      const speedRatio = Math.min(Math.abs(speed) / tuning.maxSpeed, 1);
+      chaseCam.update(carGroup, speedRatio);
+    }
     renderer.render(scene, camera);
   }
 
@@ -136,5 +165,10 @@ export function createGameEngine(canvasRef, getInput, options) {
     rafId = null;
   }
 
-  return { start, stop, resize, tuning };
+  function resetCar() {
+    carReset(startPosition, startRotationY);
+    prevSignedDist = 0;
+  }
+
+  return { start, stop, resize, tuning, resetCar, setDroneView };
 }

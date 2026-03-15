@@ -6,7 +6,9 @@ import { useState, useCallback, useRef } from 'react';
 import { createSignalingClient } from './signalingClient';
 import { createGamePeer } from './webrtcClient';
 
-const WS_URL = `ws://${typeof window !== 'undefined' ? window.location.hostname : 'localhost'}:3001/ws`;
+const WS_URL = typeof window !== 'undefined'
+  ? `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/signal`
+  : 'ws://localhost:3001/signal';
 
 export function useControllerConnect() {
   const [connectionStatus, setConnectionStatus] = useState('disconnected');
@@ -23,6 +25,9 @@ export function useControllerConnect() {
       return;
     }
 
+    webrtcRef.current?.close();
+    signalingRef.current?.disconnect();
+
     setConnectionStatus('connecting');
     setErrorMessage('');
     setSpeed(0);
@@ -34,7 +39,6 @@ export function useControllerConnect() {
     webrtcRef.current = webrtc;
 
     webrtc.initAsController(() => setConnectionStatus('connected'));
-
 
     signaling.on('error', ({ message }) => {
       setErrorMessage(message);

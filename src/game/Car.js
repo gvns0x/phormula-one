@@ -13,7 +13,7 @@ const HEIGHT = 0.6;
 const DEPTH = 4.2;
 const MASS = 700;
 
-export function createCar(world, startPos) {
+export function createCar(world, startPos, startRotationY) {
   const group = new THREE.Group();
 
   const bodyGeom = new THREE.BoxGeometry(WIDTH * 0.9, HEIGHT * 0.8, DEPTH * 0.85);
@@ -36,6 +36,9 @@ export function createCar(world, startPos) {
   const bodyPhys = new CANNON.Body({ mass: MASS, shape, material: carMaterial });
   const sp = startPos || { x: 0, y: 1, z: 0 };
   bodyPhys.position.set(sp.x, sp.y, sp.z);
+  if (startRotationY !== undefined) {
+    bodyPhys.quaternion.setFromEuler(0, startRotationY, 0);
+  }
   bodyPhys.linearDamping = 0.1;
   world.addBody(bodyPhys);
 
@@ -45,7 +48,7 @@ export function createCar(world, startPos) {
   const right = new CANNON.Vec3();
 
   function applyInput(steer, throttle, brake, dt) {
-    const { steerMax, steerRate, brakeForce, engineForce, maxSpeed, coastingDecay, lateralGrip } = tuning;
+    const { steerMax, steerRate, brakeForce, engineForce, acceleration, maxSpeed, coastingDecay, lateralGrip } = tuning;
     bodyPhys.linearDamping = tuning.linearDamping;
 
     steerAngle = THREE.MathUtils.clamp(-steer * steerMax, -steerMax, steerMax);
@@ -54,7 +57,7 @@ export function createCar(world, startPos) {
     const speed = bodyPhys.velocity.dot(forward);
     lastSpeed = speed;
     if (throttle > 0 && speed < maxSpeed) {
-      const acc = (engineForce / MASS) * throttle * dt;
+      const acc = (engineForce / MASS) * acceleration * throttle * dt;
       bodyPhys.velocity.x += forward.x * acc;
       bodyPhys.velocity.z += forward.z * acc;
     }
@@ -78,7 +81,10 @@ export function createCar(world, startPos) {
 
   function sync() {
     group.position.copy(bodyPhys.position);
+    group.position.y += tuning.carHeightOffset ?? 0;
     group.quaternion.copy(bodyPhys.quaternion);
+    const scale = tuning.carSize ?? 1;
+    group.scale.setScalar(scale);
   }
 
   function loadModel(url) {
@@ -123,6 +129,15 @@ export function createCar(world, startPos) {
     );
   }
 
+  function reset(pos, rotY) {
+    bodyPhys.position.set(pos.x, pos.y, pos.z);
+    bodyPhys.quaternion.setFromEuler(0, rotY, 0);
+    bodyPhys.velocity.setZero();
+    bodyPhys.angularVelocity.setZero();
+    lastSpeed = 0;
+    steerAngle = 0;
+  }
+
   function getSpeed() {
     return lastSpeed;
   }
@@ -134,5 +149,6 @@ export function createCar(world, startPos) {
     sync,
     loadModel,
     getSpeed,
+    reset,
   };
 }

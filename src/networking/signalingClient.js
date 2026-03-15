@@ -3,7 +3,7 @@
  * Handles room creation, joining, and SDP/ICE relay.
  */
 
-const DEFAULT_WS_URL = `ws://${window.location.hostname}:3001/ws`;
+const DEFAULT_WS_URL = `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/signal`;
 
 export function createSignalingClient(wsUrl = DEFAULT_WS_URL) {
   let ws = null;
@@ -23,16 +23,37 @@ export function createSignalingClient(wsUrl = DEFAULT_WS_URL) {
     (listeners[event] || []).forEach((h) => h(data));
   }
 
-  function connect() {
+  function connect(timeoutMs = 8000) {
     return new Promise((resolve, reject) => {
+      let settled = false;
+      const timer = setTimeout(() => {
+        if (!settled) {
+          settled = true;
+          try { ws?.close(); } catch (_e) { /* noop */ }
+          reject(new Error('Connection timed out'));
+        }
+      }, timeoutMs);
+
       ws = new WebSocket(wsUrl);
-      ws.onopen = () => resolve();
-      ws.onerror = (e) => reject(e);
+      ws.onopen = () => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        resolve();
+      };
+      ws.onerror = () => {
+        if (!settled) {
+          settled = true;
+          clearTimeout(timer);
+          reject(new Error('WebSocket error'));
+        }
+        emit('error', { message: 'WebSocket error' });
+      };
       ws.onmessage = (ev) => {
         try {
           const msg = JSON.parse(ev.data);
           emit(msg.type, msg);
-        } catch {
+        } catch (_e) {
           emit('error', { message: 'Invalid message' });
         }
       };

@@ -10,6 +10,11 @@
   gap: 8px;
 }
 
+.devtools-btn-row {
+  display: flex;
+  gap: 8px;
+}
+
 .devtools-toggle {
   background: rgba(0, 0, 0, 0.7);
   color: #0f0;
@@ -21,6 +26,24 @@
   cursor: pointer;
   backdrop-filter: blur(6px);
   transition: background 0.15s;
+}
+
+.drone-toggle {
+  background: rgba(0, 0, 0, 0.7);
+  color: #0ff;
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-family: monospace;
+  font-size: 13px;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.drone-toggle.drone-active {
+  background: rgba(0, 255, 255, 0.15);
+  border-color: rgba(0, 255, 255, 0.6);
 }
 
 .devtools-panel {
@@ -123,6 +146,10 @@
 
 @media (max-width: 768px) {
   .devtools-toggle:hover {
+    background: rgba(0, 0, 0, 0.85);
+  }
+
+  .drone-toggle:hover {
     background: rgba(0, 0, 0, 0.85);
   }
 

@@ -10,7 +10,7 @@ app.get('/', (req, res) => {
 });
 
 const server = createServer(app);
-const wss = new WebSocketServer({ server, path: '/ws' });
+const wss = new WebSocketServer({ server, path: '/signal' });
 
 const rooms = new Map();
 
@@ -87,5 +87,5 @@ wss.on('connection', (ws, req) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`Signaling server on ws://localhost:${PORT}/ws`);
+  console.log(`Signaling server on ws://localhost:${PORT}/signal`);
 });

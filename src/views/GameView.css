@@ -98,15 +98,184 @@
   color: white;
 }
 
+/* Speed */
+
 .speed-display {
   position: absolute;
   bottom: 40px;
   left: 50%;
   transform: translateX(-50%);
-  font-size: 1.5rem;
+  font-size: 3rem;
   font-weight: 700;
   letter-spacing: 0.1em;
   color: white;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
   pointer-events: none;
+}
+
+/* Timing HUD */
+
+.timing-hud {
+  position: absolute;
+  top: 4.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.75rem 1.25rem;
+  background: rgba(0, 0, 0, 0.45);
+  border-radius: 8px;
+  pointer-events: none;
+}
+
+.timing-hud .clear-best-btn {
+  pointer-events: auto;
+}
+
+.timer {
+  font-family: 'JetBrains Mono', 'SF Mono', 'Consolas', monospace;
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: #fff;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
+  letter-spacing: 0.12em;
+  font-variant-numeric: tabular-nums;
+  transition: color 0.3s ease;
+}
+
+.timer-dirty {
+  color: #ff4444;
+}
+
+.best-lap,
+.last-lap {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-family: 'JetBrains Mono', 'SF Mono', 'Consolas', monospace;
+  font-size: 1.15rem;
+  font-variant-numeric: tabular-nums;
+  color: #fff;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+}
+
+.lap-label {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: rgba(255, 255, 255, 0.85);
+  min-width: 2.8rem;
+  text-align: right;
+  font-weight: 600;
+}
+
+.lap-time {
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  min-width: 5rem;
+}
+
+.lap-delta {
+  font-size: 1rem;
+  font-weight: 700;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  font-variant-numeric: tabular-nums;
+}
+
+.lap-delta.faster {
+  color: #00ff88;
+  background: rgba(0, 255, 136, 0.15);
+}
+
+.lap-delta.slower {
+  color: #ff4444;
+  background: rgba(255, 68, 68, 0.15);
+}
+
+.clear-best-btn {
+  margin-left: 0.25rem;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+@media (max-width: 768px) {
+  .clear-best-btn:hover {
+    background: rgba(255, 255, 255, 0.25);
+  }
+}
+
+.lap-flag {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.lap-flag.flag-clean {
+  color: #00ff88;
+  text-shadow: 0 0 4px rgba(0, 255, 136, 0.4);
+}
+
+.lap-flag.flag-dirty {
+  color: #ff4444;
+  text-shadow: 0 0 4px rgba(255, 68, 68, 0.4);
+}
+
+/* Countdown */
+
+.countdown-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 8rem;
+  font-weight: 900;
+  color: white;
+  text-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+  animation: countdown-pop 0.9s ease-out forwards;
+}
+
+@keyframes countdown-pop {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.2);
+  }
+  60% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.8);
+  }
+}
+
+/* Start hint */
+
+.start-hint {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.8);
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+  animation: hint-pulse 2s ease-in-out infinite;
+}
+
+@keyframes hint-pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
 }
