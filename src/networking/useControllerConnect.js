@@ -14,6 +14,8 @@ export function useControllerConnect() {
   const [connectionStatus, setConnectionStatus] = useState('disconnected');
   const [errorMessage, setErrorMessage] = useState('');
   const [speed, setSpeed] = useState(0);
+  const [gear, setGear] = useState(1);
+  const [rpm, setRpm] = useState(0);
   const signalingRef = useRef(null);
   const webrtcRef = useRef(null);
 
@@ -33,7 +35,11 @@ export function useControllerConnect() {
     setSpeed(0);
 
     const signaling = createSignalingClient(WS_URL);
-    const webrtc = createGamePeer(signaling, { onGameState: (msg) => setSpeed(msg.speed ?? 0) });
+    const webrtc = createGamePeer(signaling, { onGameState: (msg) => {
+      setSpeed(msg.speed ?? 0);
+      setGear(msg.gear ?? 1);
+      setRpm(msg.rpm ?? 0);
+    }});
 
     signalingRef.current = signaling;
     webrtcRef.current = webrtc;
@@ -52,6 +58,8 @@ export function useControllerConnect() {
     signaling.on('peer-left', () => {
       setConnectionStatus('disconnected');
       setSpeed(0);
+      setGear(1);
+      setRpm(0);
     });
 
     signaling.connect()
@@ -76,12 +84,16 @@ export function useControllerConnect() {
     setConnectionStatus('disconnected');
     setErrorMessage('');
     setSpeed(0);
+    setGear(1);
+    setRpm(0);
   }, []);
 
   return {
     joinRoom,
     sendInput,
     speed,
+    gear,
+    rpm,
     connectionStatus,
     errorMessage,
     disconnect,

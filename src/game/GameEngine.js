@@ -85,7 +85,7 @@ export function createGameEngine(canvasRef, getInput, options) {
   const { group: trackGroup, startPosition, startRotationY, startTangent, isOffTrack } = createTrack();
   scene.add(trackGroup);
 
-  const { group: carGroup, applyInput, sync, loadModel, getSpeed, reset: carReset } = createCar(world, startPosition, startRotationY);
+  const { group: carGroup, applyInput, sync, loadModel, getSpeed, getGear, getRpm, reset: carReset } = createCar(world, startPosition, startRotationY);
   scene.add(carGroup);
 
   let prevSignedDist = 0;
@@ -137,8 +137,10 @@ export function createGameEngine(canvasRef, getInput, options) {
     const crossed = prevSignedDist < 0 && signedDist >= 0;
     prevSignedDist = signedDist;
 
+    const gear = getGear();
+    const rpm = getRpm();
     const offTrack = isOffTrack(carGroup.position.x, carGroup.position.z);
-    options?.onTick?.({ speed, crossed, offTrack });
+    options?.onTick?.({ speed, gear, rpm, crossed, offTrack });
     if (!droneView) {
       const speedRatio = Math.min(Math.abs(speed) / tuning.maxSpeed, 1);
       chaseCam.update(carGroup, speedRatio);

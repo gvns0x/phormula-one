@@ -30,7 +30,7 @@ function getTiltSteer(event) {
 
 export default function ControllerView() {
   const [inputCode, setInputCode] = useState('');
-  const { joinRoom, sendInput, speed, connectionStatus, errorMessage } = useControllerConnect();
+  const { joinRoom, sendInput, speed, gear, rpm, connectionStatus, errorMessage } = useControllerConnect();
 
   const [tiltActive, setTiltActive] = useState(false);
   const [tiltSteer, setTiltSteer] = useState(0);
@@ -175,7 +175,7 @@ export default function ControllerView() {
         ) : (
           <span className="tilt-label">TILT</span>
         )}
-        <span className="speed-display">{Math.round(speed * 3.6)} km/h</span>
+        <span className="speed-display">G{gear} {Math.round(speed * 3.6)} km/h {rpm.toLocaleString()} RPM</span>
       </div>
 
       <div

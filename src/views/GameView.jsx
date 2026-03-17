@@ -28,6 +28,8 @@ export function GameView() {
   const engineRef = useRef(null);
   const setDroneViewRef = useRef(null);
   const [speed, setSpeed] = useState(0);
+  const [gear, setGear] = useState(1);
+  const [rpm, setRpm] = useState(0);
   const { createRoom, getInput, sendState, roomCode, connectionStatus, errorMessage } = useControllerSync();
 
   const [raceState, setRaceState] = useState('idle');
@@ -60,6 +62,8 @@ export function GameView() {
     const engine = createGameEngine(canvasRef, wrappedGetInput, {
       onTick: (s) => {
         setSpeed(s.speed);
+        setGear(s.gear);
+        setRpm(s.rpm);
         sendState(s);
 
         if (s.offTrack && cleanLapRef.current) {
@@ -251,7 +255,11 @@ export function GameView() {
         </div>
       )}
 
-      <div className="speed-display">{Math.round(speed * 3.6)} km/h</div>
+      <div className="speed-display">
+        <span className="speed-gear">G{gear}</span>
+        <span className="speed-value">{Math.round(speed * 3.6)} km/h</span>
+        <span className="speed-rpm">{rpm.toLocaleString()} RPM</span>
+      </div>
       <canvas ref={canvasRef} className="game-canvas" />
     </div>
   );

@@ -4,7 +4,7 @@ const defaults = {
   brakeForce: 3,
   engineForce: 12000,
   acceleration: 1,
-  maxSpeed: 85,
+  maxSpeed: 372,
   linearDamping: 0.1,
   coastingDecay: 0.3,
   lateralGrip: 20,

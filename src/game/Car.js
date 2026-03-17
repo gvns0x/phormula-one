@@ -7,6 +7,7 @@ import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { tuning } from './tuning';
+import { createGearbox } from './gearbox';
 
 const WIDTH = 2;
 const HEIGHT = 0.6;
@@ -44,11 +45,15 @@ export function createCar(world, startPos, startRotationY) {
 
   let steerAngle = 0;
   let lastSpeed = 0;
+  let lastGear = 1;
+  let lastRpm = 0;
+  const gearbox = createGearbox();
   const forward = new CANNON.Vec3();
   const right = new CANNON.Vec3();
 
   function applyInput(steer, throttle, brake, dt) {
-    const { steerMax, steerRate, brakeForce, engineForce, acceleration, maxSpeed, coastingDecay, lateralGrip } = tuning;
+    const { steerMax, steerRate, brakeForce, engineForce, acceleration, coastingDecay, lateralGrip } = tuning;
+    const maxSpeed = (tuning.maxSpeed ?? 0) / 3.6; // convert km/h to m/s for physics
     bodyPhys.linearDamping = tuning.linearDamping;
 
     steerAngle = THREE.MathUtils.clamp(-steer * steerMax, -steerMax, steerMax);
@@ -56,6 +61,9 @@ export function createCar(world, startPos, startRotationY) {
 
     const speed = bodyPhys.velocity.dot(forward);
     lastSpeed = speed;
+    const { gear, rpm } = gearbox.update(Math.abs(speed) * 3.6);
+    lastGear = gear;
+    lastRpm = rpm;
     if (throttle > 0 && speed < maxSpeed) {
       const acc = (engineForce / MASS) * acceleration * throttle * dt;
       bodyPhys.velocity.x += forward.x * acc;
@@ -135,11 +143,22 @@ export function createCar(world, startPos, startRotationY) {
     bodyPhys.velocity.setZero();
     bodyPhys.angularVelocity.setZero();
     lastSpeed = 0;
+    lastGear = 1;
+    lastRpm = 0;
     steerAngle = 0;
+    gearbox.reset();
   }
 
   function getSpeed() {
     return lastSpeed;
+  }
+
+  function getGear() {
+    return lastGear;
+  }
+
+  function getRpm() {
+    return lastRpm;
   }
 
   return {
@@ -149,6 +168,8 @@ export function createCar(world, startPos, startRotationY) {
     sync,
     loadModel,
     getSpeed,
+    getGear,
+    getRpm,
     reset,
   };
 }

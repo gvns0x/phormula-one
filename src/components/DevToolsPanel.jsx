@@ -10,7 +10,7 @@ const params = [
   { key: 'brakeForce',    label: 'Brake Force',       min: 1,    max: 200,   step: 1    },
   { key: 'engineForce',   label: 'Engine Force (N)',   min: 1000, max: 50000, step: 100  },
   { key: 'acceleration',  label: 'Acceleration',       min: 0.1,  max: 3,     step: 0.1  },
-  { key: 'maxSpeed',      label: 'Max Speed (m/s)',    min: 10,   max: 200,   step: 1    },
+  { key: 'maxSpeed',      label: 'Max Speed (km/h)',   min: 50,   max: 400,   step: 5    },
   { key: 'linearDamping', label: 'Linear Damping',     min: 0,    max: 1,     step: 0.01 },
   { key: 'coastingDecay', label: 'Coasting Decay',     min: 0,    max: 2,     step: 0.01 },
   { key: 'lateralGrip',  label: 'Lateral Grip',       min: 0,    max: 20,    step: 0.5  },
