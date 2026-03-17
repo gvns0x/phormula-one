@@ -183,6 +183,98 @@ function interpAt(target, pts, rights, tangents, dists, totalLen, halfWidths) {
   };
 }
 
+function buildRacingLine(pts, rights, tangents, halfWidths) {
+  const N = pts.length;
+  const lineGroup = new THREE.Group();
+
+  const curvature = new Float32Array(N);
+  for (let i = 0; i < N; i++) {
+    const next = (i + 1) % N;
+    curvature[i] = tangents[i].z * tangents[next].x - tangents[i].x * tangents[next].z;
+  }
+
+  const SCALE = 500;
+  const MAX_FRAC = 0.75;
+  const offset = new Float32Array(N);
+  for (let i = 0; i < N; i++) {
+    const raw = -curvature[i] * SCALE;
+    const limit = halfWidths[i] * MAX_FRAC;
+    offset[i] = Math.max(-limit, Math.min(limit, raw));
+  }
+
+  for (let pass = 0; pass < 25; pass++) {
+    const temp = new Float32Array(offset);
+    for (let i = 0; i < N; i++) {
+      const p = (i - 1 + N) % N;
+      const n = (i + 1) % N;
+      offset[i] = (temp[p] + temp[i] + temp[n]) / 3;
+    }
+  }
+
+  for (let i = 0; i < N; i++) {
+    const limit = halfWidths[i] * MAX_FRAC;
+    offset[i] = Math.max(-limit, Math.min(limit, offset[i]));
+  }
+
+  const ribbonGeom = buildRibbon(pts, rights, Array.from(offset), 0.4, 0.045);
+  const ribbonMat = new THREE.MeshBasicMaterial({
+    color: 0x00ffaa,
+    transparent: true,
+    opacity: 0.65,
+    side: THREE.DoubleSide,
+    depthWrite: false,
+  });
+  lineGroup.add(new THREE.Mesh(ribbonGeom, ribbonMat));
+
+  const smoothCurv = new Float32Array(N);
+  for (let i = 0; i < N; i++) smoothCurv[i] = Math.abs(curvature[i]);
+  for (let pass = 0; pass < 8; pass++) {
+    const temp = new Float32Array(smoothCurv);
+    for (let i = 0; i < N; i++) {
+      const p = (i - 1 + N) % N;
+      const n = (i + 1) % N;
+      smoothCurv[i] = (temp[p] + temp[i] + temp[n]) / 3;
+    }
+  }
+
+  const APEX_THRESHOLD = 0.002;
+  const MIN_SPACING = 25;
+  const apexIndices = [];
+  for (let i = 0; i < N; i++) {
+    const p = (i - 1 + N) % N;
+    const n = (i + 1) % N;
+    if (smoothCurv[i] > smoothCurv[p] && smoothCurv[i] > smoothCurv[n] && smoothCurv[i] > APEX_THRESHOLD) {
+      if (apexIndices.length === 0 || i - apexIndices[apexIndices.length - 1] >= MIN_SPACING) {
+        apexIndices.push(i);
+      } else if (smoothCurv[i] > smoothCurv[apexIndices[apexIndices.length - 1]]) {
+        apexIndices[apexIndices.length - 1] = i;
+      }
+    }
+  }
+
+  const apexGeom = new THREE.CircleGeometry(1.5, 16);
+  apexGeom.rotateX(-Math.PI / 2);
+  const apexMat = new THREE.MeshBasicMaterial({
+    color: 0xff4400,
+    transparent: true,
+    opacity: 0.8,
+    side: THREE.DoubleSide,
+    depthWrite: false,
+  });
+  for (const idx of apexIndices) {
+    const marker = new THREE.Mesh(apexGeom, apexMat);
+    marker.position.set(
+      pts[idx].x + rights[idx].x * offset[idx],
+      0.05,
+      pts[idx].z + rights[idx].z * offset[idx]
+    );
+    lineGroup.add(marker);
+  }
+
+  lineGroup.visible = false;
+  return lineGroup;
+}
+
 export function createTrack() {
   const group = new THREE.Group();
   const { pts, halfWidths, startTangent } = sampleCenterline();
@@ -291,7 +383,14 @@ export function createTrack() {
   sf.position.set(startPt.x, 0.035, startPt.z);
   group.add(sf);
 
+  const racingLine = buildRacingLine(pts, rights, tangents, halfWidths);
+  group.add(racingLine);
+
   const startRotationY = Math.atan2(startTangent.x, startTangent.z);
+
+  function setRacingLineVisible(v) {
+    racingLine.visible = v;
+  }
 
   function isOffTrack(x, z) {
     let bestDist = Infinity;
@@ -313,5 +412,6 @@ export function createTrack() {
     startRotationY,
     startTangent,
     isOffTrack,
+    setRacingLineVisible,
   };
 }

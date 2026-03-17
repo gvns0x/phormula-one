@@ -28,6 +28,8 @@ export function GameView() {
   const canvasRef = useRef(null);
   const engineRef = useRef(null);
   const setDroneViewRef = useRef(null);
+  const setRacingLineRef = useRef(null);
+  const [racingLineVisible, setRacingLineVisible] = useState(false);
   const [speed, setSpeed] = useState(0);
   const [gear, setGear] = useState(1);
   const [rpm, setRpm] = useState(0);
@@ -101,6 +103,7 @@ export function GameView() {
     });
     engineRef.current = engine;
     setDroneViewRef.current = engine.setDroneView;
+    setRacingLineRef.current = engine.setRacingLineVisible;
     engine.start();
     return () => engine.stop();
   }, [wrappedGetInput, sendState]);
@@ -204,6 +207,17 @@ export function GameView() {
           {connectionStatus === 'connected' && 'Connected'}
           {connectionStatus === 'error' && (errorMessage || 'Error')}
         </div>
+        <button
+          className={`btn-racing-line${racingLineVisible ? ' active' : ''}`}
+          type="button"
+          onClick={() => {
+            const next = !racingLineVisible;
+            setRacingLineVisible(next);
+            setRacingLineRef.current?.(next);
+          }}
+        >
+          Racing Line
+        </button>
         <DevToolsPanel onToggleDroneView={(v) => setDroneViewRef.current?.(v)} />
       </div>
 

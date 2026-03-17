@@ -82,7 +82,7 @@ export function createGameEngine(canvasRef, getInput, options) {
   groundMesh.receiveShadow = true;
   scene.add(groundMesh);
 
-  const { group: trackGroup, startPosition, startRotationY, startTangent, isOffTrack } = createTrack();
+  const { group: trackGroup, startPosition, startRotationY, startTangent, isOffTrack, setRacingLineVisible } = createTrack();
   scene.add(trackGroup);
 
   const { group: carGroup, applyInput, sync, loadModel, getSpeed, getGear, getRpm, reset: carReset } = createCar(world, startPosition, startRotationY);
@@ -172,5 +172,5 @@ export function createGameEngine(canvasRef, getInput, options) {
     prevSignedDist = 0;
   }
 
-  return { start, stop, resize, tuning, resetCar, setDroneView };
+  return { start, stop, resize, tuning, resetCar, setDroneView, setRacingLineVisible };
 }
