@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Audiowide&display=swap');
+
 .game-view {
   position: relative;
   width: 100vw;
@@ -106,8 +108,9 @@
   left: 50%;
   transform: translateX(-50%);
   display: flex;
-  align-items: baseline;
-  gap: 1rem;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
   font-weight: 700;
   letter-spacing: 0.1em;
   color: white;
@@ -116,17 +119,42 @@
 }
 
 .speed-gear {
-  font-size: 2rem;
-  opacity: 0.8;
+  font-size: 1.4rem;
+  color: #ffffff;
+  opacity: 1;
+}
+
+.speed-main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .speed-value {
-  font-size: 3rem;
+  font-family: 'JetBrains Mono', 'SF Mono', 'Consolas', monospace;
+  font-size: 3.5rem;
+  line-height: 1;
+  color: #ffffff;
 }
 
-.speed-rpm {
-  font-size: 1.4rem;
-  opacity: 0.7;
+.speed-unit {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  color: #ffffff;
+  opacity: 1;
+}
+
+.rpm-bar {
+  display: flex;
+  gap: 0.25rem;
+  margin-top: 0.2rem;
+}
+
+.rpm-bar-segment {
+  width: 16px;
+  height: 4px;
+  border-radius: 3px;
+  background-color: rgba(255, 255, 255, 0.12);
 }
 
 /* Timing HUD */

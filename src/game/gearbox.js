@@ -9,7 +9,7 @@ const GEAR_RATIOS = [
    39.931, // gear 8: 11500 / 288
 ];
 
-const MAX_RPM = 12000;
+export const MAX_RPM = 12000;
 const DOWNSHIFT_RPM = 6500;
 const NUM_GEARS = GEAR_RATIOS.length;
 

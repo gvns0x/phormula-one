@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { createGameEngine } from '../game/GameEngine';
+import { MAX_RPM } from '../game/gearbox';
 import { useControllerSync } from '../networking/useControllerSync';
 import { DevToolsPanel } from '../components/DevToolsPanel';
 import './GameView.css';
@@ -178,6 +179,9 @@ export function GameView() {
   }, []);
 
   const delta = formatDelta(lastLap, bestLap);
+  const rpmFraction = Math.max(0, Math.min(rpm / MAX_RPM, 1));
+  const rpmSegments = 8;
+  const activeSegments = Math.round(rpmFraction * rpmSegments);
 
   return (
     <div className="game-view">
@@ -214,17 +218,6 @@ export function GameView() {
                 {bestLapClean ? '\u2691' : '\u2691'}
               </span>
             )}
-            <button
-              type="button"
-              className="clear-best-btn"
-              onClick={() => {
-                setBestLap(null);
-                setBestLapClean(null);
-              }}
-              title="Clear best lap"
-            >
-              Clear
-            </button>
           </div>
         )}
         {lastLap != null && (
@@ -257,8 +250,28 @@ export function GameView() {
 
       <div className="speed-display">
         <span className="speed-gear">G{gear}</span>
-        <span className="speed-value">{Math.round(speed * 3.6)} km/h</span>
-        <span className="speed-rpm">{rpm.toLocaleString()} RPM</span>
+        <div className="speed-main">
+          <span className="speed-value">{Math.round(speed * 3.6)}</span>
+          <span className="speed-unit">km/h</span>
+        </div>
+        <div className="rpm-bar">
+          {Array.from({ length: rpmSegments }).map((_, i) => {
+            const filled = i < activeSegments;
+            let color = '#00ff88';
+            if (i >= 4 && i < 6) color = '#ffd600';
+            if (i >= 6) color = '#ff3333';
+            return (
+              <div
+                // eslint-disable-next-line react/no-array-index-key
+                key={i}
+                className="rpm-bar-segment"
+                style={{
+                  backgroundColor: filled ? color : 'rgba(255, 255, 255, 0.12)',
+                }}
+              />
+            );
+          })}
+        </div>
       </div>
       <canvas ref={canvasRef} className="game-canvas" />
     </div>
