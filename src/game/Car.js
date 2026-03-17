@@ -43,6 +43,17 @@ export function createCar(world, startPos, startRotationY) {
   bodyPhys.linearDamping = 0.1;
   world.addBody(bodyPhys);
 
+  bodyPhys.addEventListener('collide', (e) => {
+    const impact = Math.abs(e.contact.getImpactVelocityAlongNormal());
+    if (impact > 5) {
+      const intensity = Math.min(impact / 30, 1);
+      bodyPhys.angularVelocity.y += (Math.random() - 0.5) * impact * 0.8;
+      bodyPhys.angularVelocity.x += (Math.random() - 0.5) * intensity * 3;
+      bodyPhys.angularVelocity.z += (Math.random() - 0.5) * intensity * 3;
+      bodyPhys.velocity.y += impact * 0.25;
+    }
+  });
+
   let steerAngle = 0;
   let lastSpeed = 0;
   let lastGear = 1;
@@ -51,9 +62,10 @@ export function createCar(world, startPos, startRotationY) {
   const forward = new CANNON.Vec3();
   const right = new CANNON.Vec3();
 
-  function applyInput(steer, throttle, brake, dt) {
+  function applyInput(steer, throttle, brake, dt, reverse = 0) {
     const { steerMax, steerRate, brakeForce, engineForce, acceleration, coastingDecay, lateralGrip } = tuning;
-    const maxSpeed = (tuning.maxSpeed ?? 0) / 3.6; // convert km/h to m/s for physics
+    const maxSpeed = (tuning.maxSpeed ?? 0) / 3.6;
+    const reverseMaxSpeed = maxSpeed * 0.3;
     bodyPhys.linearDamping = tuning.linearDamping;
 
     steerAngle = THREE.MathUtils.clamp(-steer * steerMax, -steerMax, steerMax);
@@ -62,23 +74,36 @@ export function createCar(world, startPos, startRotationY) {
     const speed = bodyPhys.velocity.dot(forward);
     lastSpeed = speed;
     const { gear, rpm } = gearbox.update(Math.abs(speed) * 3.6);
-    lastGear = gear;
+    lastGear = speed < -0.5 ? 'R' : gear;
     lastRpm = rpm;
+
     if (throttle > 0 && speed < maxSpeed) {
       const acc = (engineForce / MASS) * acceleration * throttle * dt;
       bodyPhys.velocity.x += forward.x * acc;
       bodyPhys.velocity.z += forward.z * acc;
     }
-    if (brake > 0) {
+
+    if (brake > 0 && speed > 1) {
       const damp = 1 - Math.min(brake * brakeForce * dt, 0.95);
       bodyPhys.velocity.x *= damp;
       bodyPhys.velocity.z *= damp;
+    } else if (brake > 0 && speed <= 1 && throttle === 0) {
+      reverse = Math.max(reverse, brake);
     }
-    if (throttle === 0 && brake === 0 && speed > 0.5) {
+
+    if (reverse > 0 && speed > -reverseMaxSpeed) {
+      const acc = (engineForce / MASS) * acceleration * reverse * dt * 0.3;
+      bodyPhys.velocity.x -= forward.x * acc;
+      bodyPhys.velocity.z -= forward.z * acc;
+    }
+
+    if (throttle === 0 && brake === 0 && reverse === 0 && Math.abs(speed) > 0.5) {
       bodyPhys.velocity.x *= (1 - coastingDecay * dt);
       bodyPhys.velocity.z *= (1 - coastingDecay * dt);
     }
-    bodyPhys.angularVelocity.y = steerAngle * steerRate * (speed > 1 ? 1 : speed);
+
+    const absSpeed = Math.abs(speed);
+    bodyPhys.angularVelocity.y = steerAngle * steerRate * (absSpeed > 1 ? 1 : absSpeed) * (speed < -0.5 ? -1 : 1);
 
     bodyPhys.quaternion.vmult(new CANNON.Vec3(1, 0, 0), right);
     const lateralSpeed = bodyPhys.velocity.dot(right);

@@ -38,17 +38,19 @@ export default function ControllerView() {
   const steerRef = useRef(0);
   const throttleRef = useRef(0);
   const brakeRef = useRef(0);
+  const reverseRef = useRef(0);
   const rafRef = useRef(null);
-  const lastSentRef = useRef({ s: 0, a: 0, b: 0 });
+  const lastSentRef = useRef({ s: 0, a: 0, b: 0, r: 0 });
 
   const sendIfChanged = useCallback(() => {
     const s = steerRef.current;
     const a = throttleRef.current;
     const b = brakeRef.current;
+    const r = reverseRef.current;
     const last = lastSentRef.current;
-    if (s !== last.s || a !== last.a || b !== last.b) {
-      lastSentRef.current = { s, a, b };
-      sendInput({ t: Date.now(), s, a, b });
+    if (s !== last.s || a !== last.a || b !== last.b || r !== last.r) {
+      lastSentRef.current = { s, a, b, r };
+      sendInput({ t: Date.now(), s, a, b, r });
     }
   }, [sendInput]);
 
@@ -148,6 +150,16 @@ export default function ControllerView() {
     brakeRef.current = 0;
   }, []);
 
+  const handleReverse = useCallback((e) => {
+    e.preventDefault();
+    reverseRef.current = 1;
+  }, []);
+
+  const handleReverseEnd = useCallback((e) => {
+    e.preventDefault();
+    reverseRef.current = 0;
+  }, []);
+
   const handleConnect = useCallback(() => {
     joinRoom(inputCode);
   }, [joinRoom, inputCode]);
@@ -200,16 +212,24 @@ export default function ControllerView() {
           )}
         </div>
         <div
-          className="zone throttle"
-          onTouchStart={handleThrottle}
-          onTouchEnd={handleThrottleEnd}
-          onTouchCancel={handleThrottleEnd}
-        />
-        <div
           className="zone brake"
           onTouchStart={handleBrake}
           onTouchEnd={handleBrakeEnd}
           onTouchCancel={handleBrakeEnd}
+        />
+        <div
+          className="zone reverse"
+          onTouchStart={handleReverse}
+          onTouchEnd={handleReverseEnd}
+          onTouchCancel={handleReverseEnd}
+        >
+          R
+        </div>
+        <div
+          className="zone throttle"
+          onTouchStart={handleThrottle}
+          onTouchEnd={handleThrottleEnd}
+          onTouchCancel={handleThrottleEnd}
         />
       </div>
     </div>

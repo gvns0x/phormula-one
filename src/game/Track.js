@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 
 const KERB_W = 1.2;
-const BARRIER_GAP = 10;
+const BARRIER_GAP = 2.8;
 const BARRIER_H = 1.2;
 const N_SAMPLES = 800;
 
@@ -278,19 +278,36 @@ function buildRacingLine(pts, rights, tangents, halfWidths) {
 
 function createBarrierTexture() {
   const c = document.createElement('canvas');
-  c.width = 256; c.height = 64;
+  c.width = 512;
+  c.height = 128;
   const ctx = c.getContext('2d');
-  ctx.fillStyle = '#FFD700';
-  ctx.fillRect(0, 0, 256, 64);
-  ctx.fillStyle = '#111';
-  ctx.fillRect(0, 0, 256, 5);
-  ctx.fillRect(0, 59, 256, 5);
-  ctx.font = 'bold 24px Arial, sans-serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText('PIRELLI', 64, 32);
-  ctx.fillText('P ZERO', 192, 32);
-  return new THREE.CanvasTexture(c);
+
+  // Base yellow barrier background
+  ctx.fillStyle = '#ffd000';
+  ctx.fillRect(0, 0, c.width, c.height);
+
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = THREE.ClampToEdgeWrapping;
+  tex.wrapT = THREE.ClampToEdgeWrapping;
+
+  const img = new Image();
+  img.src = '/textures/pirelli-barrier.png';
+  img.onload = () => {
+    // Clear + redraw yellow, then logo centered and scaled
+    ctx.fillStyle = '#ffd000';
+    ctx.fillRect(0, 0, c.width, c.height);
+
+    const maxLogoWidth = c.width * 0.6;
+    const logoWidth = maxLogoWidth;
+    const logoHeight = (img.height / img.width) * logoWidth;
+    const x = (c.width - logoWidth) / 2;
+    const y = (c.height - logoHeight) / 2;
+    ctx.drawImage(img, x, y, logoWidth, logoHeight);
+
+    tex.needsUpdate = true;
+  };
+
+  return tex;
 }
 
 export function createTrack(world) {
@@ -361,13 +378,17 @@ export function createTrack(world) {
   barrierGeom.translate(0, BARRIER_H / 2, 0);
   const barriers = new THREE.InstancedMesh(
     barrierGeom,
-    new THREE.MeshStandardMaterial({ map: createBarrierTexture(), roughness: 0.5 }),
+    new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      map: createBarrierTexture(),
+      roughness: 0.5,
+    }),
     numPerSide * 2
   );
   barriers.castShadow = true;
   barriers.receiveShadow = true;
 
-  const barrierPhysMat = new CANNON.Material({ friction: 0.5, restitution: 0.3 });
+  const barrierPhysMat = new CANNON.Material({ friction: 0.5, restitution: 0.8 });
   const barrierShape = new CANNON.Box(new CANNON.Vec3(0.4, BARRIER_H / 2, 1.5));
 
   const dummy = new THREE.Object3D();

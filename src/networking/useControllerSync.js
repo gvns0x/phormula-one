@@ -11,7 +11,7 @@ const WS_URL = typeof window !== 'undefined'
   ? `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/signal`
   : 'ws://localhost:3001/signal';
 
-const defaultInput = { steer: 0, throttle: 0, brake: 0 };
+const defaultInput = { steer: 0, throttle: 0, brake: 0, reverse: 0 };
 
 function useKeyboardInput() {
   const kbRef = useRef(defaultInput);
@@ -65,6 +65,7 @@ export function useControllerSync() {
         steer: typeof msg.s === 'number' ? msg.s : 0,
         throttle: typeof msg.a === 'number' ? msg.a : 0,
         brake: typeof msg.b === 'number' ? msg.b : 0,
+        reverse: typeof msg.r === 'number' ? msg.r : 0,
       };
       inputRef.current = next;
     });
@@ -129,6 +130,7 @@ export function useControllerSync() {
       steer: ctrl.steer !== 0 ? ctrl.steer : kb.steer,
       throttle: Math.max(ctrl.throttle || 0, kb.throttle || 0),
       brake: Math.max(ctrl.brake || 0, kb.brake || 0),
+      reverse: ctrl.reverse || 0,
     };
   }, [keyboardRef]);
 

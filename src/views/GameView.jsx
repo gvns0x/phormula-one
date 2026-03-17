@@ -263,9 +263,9 @@ export function GameView() {
       )}
 
       <div className="speed-display">
-        <span className="speed-gear">G{gear}</span>
+        <span className="speed-gear">{gear === 'R' ? 'R' : `G${gear}`}</span>
         <div className="speed-main">
-          <span className="speed-value">{Math.round(speed * 3.6)}</span>
+          <span className="speed-value">{Math.round(Math.abs(speed) * 3.6)}</span>
           <span className="speed-unit">km/h</span>
         </div>
         <div className="rpm-bar">

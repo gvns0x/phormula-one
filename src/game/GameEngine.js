@@ -128,7 +128,7 @@ export function createGameEngine(canvasRef, getInput, options) {
     acc += Math.min(dt, 0.1);
     while (acc >= FIXED_DT && acc > 0) {
       const input = getInput ? getInput() : { steer: 0, throttle: 0, brake: 0 };
-      applyInput(input.steer ?? 0, input.throttle ?? 0, input.brake ?? 0, FIXED_DT);
+      applyInput(input.steer ?? 0, input.throttle ?? 0, input.brake ?? 0, FIXED_DT, input.reverse ?? 0);
       world.step(FIXED_DT);
       acc -= FIXED_DT;
     }
