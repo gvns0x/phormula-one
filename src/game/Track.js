@@ -1,8 +1,9 @@
 import * as THREE from 'three';
+import * as CANNON from 'cannon-es';
 
 const KERB_W = 1.2;
 const BARRIER_GAP = 10;
-const BARRIER_H = 1.0;
+const BARRIER_H = 1.2;
 const N_SAMPLES = 800;
 
 const SECTION_WIDTHS = {
@@ -275,7 +276,24 @@ function buildRacingLine(pts, rights, tangents, halfWidths) {
   return lineGroup;
 }
 
-export function createTrack() {
+function createBarrierTexture() {
+  const c = document.createElement('canvas');
+  c.width = 256; c.height = 64;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#FFD700';
+  ctx.fillRect(0, 0, 256, 64);
+  ctx.fillStyle = '#111';
+  ctx.fillRect(0, 0, 256, 5);
+  ctx.fillRect(0, 59, 256, 5);
+  ctx.font = 'bold 24px Arial, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('PIRELLI', 64, 32);
+  ctx.fillText('P ZERO', 192, 32);
+  return new THREE.CanvasTexture(c);
+}
+
+export function createTrack(world) {
   const group = new THREE.Group();
   const { pts, halfWidths, startTangent } = sampleCenterline();
   const { tangents, rights } = getFrames(pts);
@@ -339,15 +357,18 @@ export function createTrack() {
   }
 
   const numPerSide = Math.floor(totalLen / BARRIER_GAP);
-  const barrierGeom = new THREE.BoxGeometry(0.5, BARRIER_H, 2.5);
+  const barrierGeom = new THREE.BoxGeometry(0.8, BARRIER_H, 3.0);
   barrierGeom.translate(0, BARRIER_H / 2, 0);
   const barriers = new THREE.InstancedMesh(
     barrierGeom,
-    new THREE.MeshStandardMaterial({ color: 0x999999, roughness: 0.4 }),
+    new THREE.MeshStandardMaterial({ map: createBarrierTexture(), roughness: 0.5 }),
     numPerSide * 2
   );
   barriers.castShadow = true;
   barriers.receiveShadow = true;
+
+  const barrierPhysMat = new CANNON.Material({ friction: 0.5, restitution: 0.3 });
+  const barrierShape = new CANNON.Box(new CANNON.Vec3(0.4, BARRIER_H / 2, 1.5));
 
   const dummy = new THREE.Object3D();
   let bIdx = 0;
@@ -355,18 +376,20 @@ export function createTrack() {
     const f = interpAt(d, pts, rights, tangents, dists, totalLen, halfWidths);
     const barrierDist = f.hw + KERB_W + 1.5;
     for (const s of [-1, 1]) {
-      dummy.position.set(
-        f.pos.x + f.right.x * s * barrierDist,
-        0,
-        f.pos.z + f.right.z * s * barrierDist
-      );
-      dummy.lookAt(
-        dummy.position.x + f.tangent.x,
-        0,
-        dummy.position.z + f.tangent.z
-      );
+      const bx = f.pos.x + f.right.x * s * barrierDist;
+      const bz = f.pos.z + f.right.z * s * barrierDist;
+      dummy.position.set(bx, 0, bz);
+      dummy.lookAt(bx + f.tangent.x, 0, bz + f.tangent.z);
       dummy.updateMatrix();
       barriers.setMatrixAt(bIdx++, dummy.matrix);
+
+      if (world) {
+        const body = new CANNON.Body({ mass: 0, material: barrierPhysMat });
+        body.addShape(barrierShape);
+        body.position.set(bx, BARRIER_H / 2, bz);
+        body.quaternion.setFromEuler(0, Math.atan2(f.tangent.x, f.tangent.z), 0);
+        world.addBody(body);
+      }
     }
   }
   barriers.instanceMatrix.needsUpdate = true;
@@ -413,5 +436,7 @@ export function createTrack() {
     startTangent,
     isOffTrack,
     setRacingLineVisible,
+    pts,
+    halfWidths,
   };
 }

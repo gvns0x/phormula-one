@@ -162,7 +162,7 @@
 
 .speed-value {
   font-family: 'JetBrains Mono', 'SF Mono', 'Consolas', monospace;
-  font-size: 3.5rem;
+  font-size: 4rem;
   line-height: 1;
   color: #ffffff;
 }
@@ -182,7 +182,7 @@
 
 .rpm-bar-segment {
   width: 16px;
-  height: 4px;
+  height: 2px;
   border-radius: 3px;
   background-color: rgba(255, 255, 255, 0.12);
 }

@@ -3,6 +3,7 @@ import * as CANNON from 'cannon-es';
 import { createTrack } from './Track';
 import { createCar } from './Car';
 import { createChaseCamera } from './Camera';
+import { createEnvironment } from './Environment';
 import { tuning } from './tuning';
 
 const FIXED_DT = 1 / 60;
@@ -34,7 +35,7 @@ function createGroundTexture() {
 export function createGameEngine(canvasRef, getInput, options) {
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x87ceeb);
-  scene.fog = new THREE.Fog(0x87ceeb, 200, 700);
+  scene.fog = new THREE.Fog(0x87ceeb, 200, 900);
 
   const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 2000);
   camera.position.set(0, 10, 20);
@@ -82,11 +83,14 @@ export function createGameEngine(canvasRef, getInput, options) {
   groundMesh.receiveShadow = true;
   scene.add(groundMesh);
 
-  const { group: trackGroup, startPosition, startRotationY, startTangent, isOffTrack, setRacingLineVisible } = createTrack();
+  const { group: trackGroup, startPosition, startRotationY, startTangent, isOffTrack, setRacingLineVisible, pts: trackPts, halfWidths: trackHW } = createTrack(world);
   scene.add(trackGroup);
 
   const { group: carGroup, applyInput, sync, loadModel, getSpeed, getGear, getRpm, reset: carReset } = createCar(world, startPosition, startRotationY);
   scene.add(carGroup);
+
+  const envGroup = createEnvironment(trackPts, trackHW, world);
+  scene.add(envGroup);
 
   let prevSignedDist = 0;
 

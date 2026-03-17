@@ -192,11 +192,11 @@ export function GameView() {
         <div className="room-section">
           {!roomCode ? (
             <button className="btn-create" onClick={createRoom} type="button">
-              Create room
+              Connect phone
             </button>
           ) : (
             <div className="room-info">
-              <span className="room-label">Room</span>
+              <span className="room-label">Enter this code</span>
               <span className="room-code">{roomCode}</span>
             </div>
           )}
