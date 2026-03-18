@@ -3,6 +3,7 @@ import { createGameEngine } from '../game/GameEngine';
 import { MAX_RPM } from '../game/gearbox';
 import { useControllerSync } from '../networking/useControllerSync';
 import { DevToolsPanel } from '../components/DevToolsPanel';
+import { MiniMap } from '../components/MiniMap';
 import './GameView.css';
 
 function formatTime(ms) {
@@ -24,25 +25,36 @@ function formatDelta(lastLap, bestLap) {
   return { text: `${sign}${sec}.${String(millis).padStart(3, '0')}`, isFaster: delta <= 0 };
 }
 
+const TOTAL_LAPS = 5;
+
 export function GameView() {
   const canvasRef = useRef(null);
   const engineRef = useRef(null);
   const setDroneViewRef = useRef(null);
   const setRacingLineRef = useRef(null);
+  const setCornerLabelsRef = useRef(null);
   const [racingLineVisible, setRacingLineVisible] = useState(false);
   const [speed, setSpeed] = useState(0);
   const [gear, setGear] = useState(1);
   const [rpm, setRpm] = useState(0);
-  const { createRoom, getInput, sendState, roomCode, connectionStatus, errorMessage } = useControllerSync();
+  const { createRoom, getInput, sendState, roomCode, connectionStatus, errorMessage, onRestartRef } = useControllerSync();
 
   const [raceState, setRaceState] = useState('idle');
-  const [countdownValue, setCountdownValue] = useState(null);
+  const [lightsState, setLightsState] = useState(0);
+  const [lightsVisible, setLightsVisible] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [lastLap, setLastLap] = useState(null);
   const [bestLap, setBestLap] = useState(null);
   const [lastLapClean, setLastLapClean] = useState(null);
   const [bestLapClean, setBestLapClean] = useState(null);
   const [currentLapDirty, setCurrentLapDirty] = useState(false);
+  const [toastMessage, setToastMessage] = useState(null);
+  const [carPosition, setCarPosition] = useState(null);
+  const [inDrsZone, setInDrsZone] = useState(false);
+  const [drsActive, setDrsActive] = useState(false);
+  const [currentLap, setCurrentLap] = useState(0);
+  const [raceFinished, setRaceFinished] = useState(false);
+  const [totalRaceTime, setTotalRaceTime] = useState(null);
 
   const lapStartRef = useRef(null);
   const cleanLapRef = useRef(true);
@@ -50,6 +62,13 @@ export function GameView() {
   const countdownTimersRef = useRef([]);
   const inputBlockedRef = useRef(false);
   const lastTapRef = useRef({ time: 0, x: 0, y: 0 });
+  const ghostRecordingRef = useRef([]);
+  const ghostDataRef = useRef(null);
+  const ghostVisibleRef = useRef(false);
+  const toastTimerRef = useRef(null);
+  const currentLapRef = useRef(0);
+  const raceStartTimeRef = useRef(null);
+  const [trackPts, setTrackPts] = useState(null);
 
   useEffect(() => {
     raceStateRef.current = raceState;
@@ -68,6 +87,16 @@ export function GameView() {
         setGear(s.gear);
         setRpm(s.rpm);
         sendState(s);
+        if (s.carPos) setCarPosition(s.carPos);
+        setInDrsZone(!!s.inDrsZone);
+        setDrsActive(!!s.drsActive);
+
+        if (raceStateRef.current === 'racing' && s.carPos && s.carQuat) {
+          ghostRecordingRef.current.push({
+            x: s.carPos.x, y: s.carPos.y, z: s.carPos.z,
+            qx: s.carQuat.x, qy: s.carQuat.y, qz: s.carQuat.z, qw: s.carQuat.w,
+          });
+        }
 
         if (s.offTrack && cleanLapRef.current) {
           cleanLapRef.current = false;
@@ -83,20 +112,40 @@ export function GameView() {
           const lapTime = now - lapStartRef.current;
           if (lapTime > 5000) {
             const wasClean = cleanLapRef.current;
+            const recording = ghostRecordingRef.current;
             setLastLap(lapTime);
             setLastLapClean(wasClean);
             setBestLap(prev => {
               if (!wasClean) return prev;
               if (prev == null || lapTime < prev) {
                 setBestLapClean(true);
+                ghostDataRef.current = recording;
+                engineRef.current?.setGhostData(recording);
+                if (ghostVisibleRef.current) {
+                  engineRef.current?.setGhostVisible(true);
+                }
                 return lapTime;
               }
               return prev;
             });
-            lapStartRef.current = now;
-            cleanLapRef.current = true;
-            setCurrentLapDirty(false);
-            setElapsed(0);
+            ghostRecordingRef.current = [];
+            engineRef.current?.resetGhostPlayback();
+
+            if (currentLapRef.current >= TOTAL_LAPS) {
+              const total = now - raceStartTimeRef.current;
+              setTotalRaceTime(total);
+              setRaceState('finished');
+              raceStateRef.current = 'finished';
+              inputBlockedRef.current = true;
+              setElapsed(0);
+            } else {
+              currentLapRef.current += 1;
+              setCurrentLap(currentLapRef.current);
+              lapStartRef.current = now;
+              cleanLapRef.current = true;
+              setCurrentLapDirty(false);
+              setElapsed(0);
+            }
           }
         }
       },
@@ -104,6 +153,8 @@ export function GameView() {
     engineRef.current = engine;
     setDroneViewRef.current = engine.setDroneView;
     setRacingLineRef.current = engine.setRacingLineVisible;
+    setCornerLabelsRef.current = engine.setCornerLabelsVisible;
+    setTrackPts(engine.trackPts);
     engine.start();
     return () => engine.stop();
   }, [wrappedGetInput, sendState]);
@@ -118,23 +169,54 @@ export function GameView() {
     engine.resetCar();
     inputBlockedRef.current = true;
     cleanLapRef.current = true;
+    ghostRecordingRef.current = [];
+    ghostDataRef.current = null;
+    ghostVisibleRef.current = false;
+    engine.setGhostData(null);
+    engine.setGhostVisible(false);
+    engine.resetGhostPlayback();
+    engine.setGhostPaused(true);
+    currentLapRef.current = 1;
+    setCurrentLap(1);
+    setRaceFinished(false);
+    setTotalRaceTime(null);
     setCurrentLapDirty(false);
     setRaceState('countdown');
     setElapsed(0);
     setLastLap(null);
     setLastLapClean(null);
-    setCountdownValue(3);
+    setBestLap(null);
+    setBestLapClean(null);
+    setLightsState(0);
+    setLightsVisible(true);
 
-    const t1 = setTimeout(() => setCountdownValue(2), 1000);
-    const t2 = setTimeout(() => setCountdownValue(1), 2000);
-    const t3 = setTimeout(() => {
-      setCountdownValue(null);
+    const timers = [];
+    for (let i = 1; i <= 5; i++) {
+      timers.push(setTimeout(() => setLightsState(i), i * 1000));
+    }
+    const randomDelay = 200 + Math.random() * 800;
+    timers.push(setTimeout(() => {
+      setLightsState(6);
       setRaceState('racing');
       inputBlockedRef.current = false;
-      lapStartRef.current = performance.now();
-    }, 3000);
+      const now = performance.now();
+      lapStartRef.current = now;
+      raceStartTimeRef.current = now;
+      engineRef.current?.setGhostPaused(false);
+      setTimeout(() => setLightsVisible(false), 1200);
+    }, 5000 + randomDelay));
 
-    countdownTimersRef.current = [t1, t2, t3];
+    countdownTimersRef.current = timers;
+  }, []);
+
+  useEffect(() => {
+    onRestartRef.current = startCountdown;
+  }, [startCountdown, onRestartRef]);
+
+  const showToast = useCallback((msg) => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToastMessage(msg);
+    toastTimerRef.current = setTimeout(() => setToastMessage(null), 3000);
   }, []);
 
   useEffect(() => {
@@ -143,10 +225,26 @@ export function GameView() {
         e.preventDefault();
         startCountdown();
       }
+      if (e.key === 'g' || e.key === 'G') {
+        if (!ghostDataRef.current) {
+          showToast('Complete a green lap to see the ghost car');
+          return;
+        }
+        ghostVisibleRef.current = !ghostVisibleRef.current;
+        engineRef.current?.setGhostVisible(ghostVisibleRef.current);
+        if (ghostVisibleRef.current) {
+          showToast('Ghost car ON');
+        } else {
+          showToast('Ghost car OFF');
+        }
+      }
+      if (e.key === 'o' || e.key === 'O') {
+        engineRef.current?.activateDrs();
+      }
     }
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [startCountdown]);
+  }, [startCountdown, showToast]);
 
   useEffect(() => {
     function isInCenter(clientX, clientY) {
@@ -207,18 +305,23 @@ export function GameView() {
           {connectionStatus === 'connected' && 'Connected'}
           {connectionStatus === 'error' && (errorMessage || 'Error')}
         </div>
-        <button
-          className={`btn-racing-line${racingLineVisible ? ' active' : ''}`}
-          type="button"
-          onClick={() => {
-            const next = !racingLineVisible;
-            setRacingLineVisible(next);
-            setRacingLineRef.current?.(next);
-          }}
-        >
-          Racing Line
-        </button>
-        <DevToolsPanel onToggleDroneView={(v) => setDroneViewRef.current?.(v)} />
+        <div className="overlay-right">
+          <button
+            className={`btn-racing-line${racingLineVisible ? ' active' : ''}`}
+            type="button"
+            onClick={() => {
+              const next = !racingLineVisible;
+              setRacingLineVisible(next);
+              setRacingLineRef.current?.(next);
+            }}
+          >
+            Racing Line
+          </button>
+          <DevToolsPanel
+            onToggleDroneView={(v) => setDroneViewRef.current?.(v)}
+            onOpenChange={(v) => setCornerLabelsRef.current?.(v)}
+          />
+        </div>
       </div>
 
       <div className="timing-hud">
@@ -252,17 +355,38 @@ export function GameView() {
         )}
       </div>
 
-      {raceState === 'idle' && (
-        <div className="start-hint">Press Space to start</div>
+      {currentLap > 0 && raceState !== 'idle' && (
+        <div className="lap-counter">LAP {Math.min(currentLap, TOTAL_LAPS)}/{TOTAL_LAPS}</div>
       )}
 
-      {countdownValue != null && (
-        <div className="countdown-overlay" key={countdownValue}>
-          {countdownValue}
+      {(raceState === 'idle' || raceState === 'finished') && (
+        <div className="start-hint">
+          {raceState === 'finished' ? (
+            <>
+              <div className="finish-title">Race Complete</div>
+              <div className="finish-total">Total: {formatTime(totalRaceTime)}</div>
+              {bestLap != null && <div className="finish-best">Best Lap: {formatTime(bestLap)}</div>}
+              <div className="finish-restart">Press Space to restart</div>
+            </>
+          ) : 'Press Space to start'}
+        </div>
+      )}
+
+      {lightsVisible && (
+        <div className={`f1-lights${lightsState === 6 ? ' f1-lights-out' : ''}`}>
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div
+              key={i}
+              className={`f1-light${lightsState >= i + 1 && lightsState < 6 ? ' lit' : ''}`}
+            />
+          ))}
         </div>
       )}
 
       <div className="speed-display">
+        <div className={`drs-banner${inDrsZone ? ' drs-visible' : ''}${drsActive ? ' drs-active' : ''}`}>
+          {drsActive ? 'DRS ACTIVE' : 'DRS ZONE (press O)'}
+        </div>
         <span className="speed-gear">{gear === 'R' ? 'R' : `G${gear}`}</span>
         <div className="speed-main">
           <span className="speed-value">{Math.round(Math.abs(speed) * 3.6)}</span>
@@ -287,6 +411,11 @@ export function GameView() {
           })}
         </div>
       </div>
+      {trackPts && <MiniMap trackPts={trackPts} carPosition={carPosition} />}
+
+      {toastMessage && (
+        <div className="toast" key={toastMessage}>{toastMessage}</div>
+      )}
       <canvas ref={canvasRef} className="game-canvas" />
     </div>
   );

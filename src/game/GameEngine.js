@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { createTrack } from './Track';
-import { createCar } from './Car';
+import { createCar, createGhostCar } from './Car';
 import { createChaseCamera } from './Camera';
 import { createEnvironment } from './Environment';
 import { tuning } from './tuning';
@@ -83,14 +83,50 @@ export function createGameEngine(canvasRef, getInput, options) {
   groundMesh.receiveShadow = true;
   scene.add(groundMesh);
 
-  const { group: trackGroup, startPosition, startRotationY, startTangent, isOffTrack, setRacingLineVisible, pts: trackPts, halfWidths: trackHW } = createTrack(world);
+  const { group: trackGroup, startPosition, startRotationY, startTangent, isOffTrack, setRacingLineVisible, setCornerLabelsVisible, getNearestIndex, drsStartIdx, drsEndIdx, pts: trackPts, halfWidths: trackHW } = createTrack(world);
   scene.add(trackGroup);
 
-  const { group: carGroup, applyInput, sync, loadModel, getSpeed, getGear, getRpm, reset: carReset } = createCar(world, startPosition, startRotationY);
+  const { group: carGroup, body: carBody, applyInput, sync, loadModel, getSpeed, getGear, getRpm, reset: carReset } = createCar(world, startPosition, startRotationY);
   scene.add(carGroup);
 
   const envGroup = createEnvironment(trackPts, trackHW, world);
   scene.add(envGroup);
+
+  const ghostGroup = createGhostCar();
+  scene.add(ghostGroup);
+
+  let ghostData = null;
+  let ghostFrameIdx = 0;
+  let ghostPaused = true;
+
+  function setGhostData(frames) {
+    ghostData = frames;
+    ghostFrameIdx = 0;
+  }
+
+  function setGhostVisible(v) {
+    ghostGroup.visible = v && ghostData != null;
+  }
+
+  function resetGhostPlayback() {
+    ghostFrameIdx = 0;
+  }
+
+  function setGhostPaused(v) {
+    ghostPaused = v;
+  }
+
+  let drsActive = false;
+
+  function isInDrsZone(idx) {
+    if (drsStartIdx < drsEndIdx) return idx >= drsStartIdx && idx <= drsEndIdx;
+    return idx >= drsStartIdx || idx <= drsEndIdx;
+  }
+
+  function activateDrs() {
+    const idx = getNearestIndex(carBody.position.x, carBody.position.z);
+    if (isInDrsZone(idx)) drsActive = true;
+  }
 
   let prevSignedDist = 0;
 
@@ -126,14 +162,23 @@ export function createGameEngine(canvasRef, getInput, options) {
 
   function tick(dt) {
     acc += Math.min(dt, 0.1);
+    let offTrack = false;
     while (acc >= FIXED_DT && acc > 0) {
       const input = getInput ? getInput() : { steer: 0, throttle: 0, brake: 0 };
-      applyInput(input.steer ?? 0, input.throttle ?? 0, input.brake ?? 0, FIXED_DT, input.reverse ?? 0);
+      if (drsActive && (input.brake ?? 0) > 0) drsActive = false;
+      applyInput(input.steer ?? 0, input.throttle ?? 0, input.brake ?? 0, FIXED_DT, input.reverse ?? 0, drsActive ? 0.08 : 0);
       world.step(FIXED_DT);
+      if (!offTrack && isOffTrack(carBody.position.x, carBody.position.z)) {
+        offTrack = true;
+      }
       acc -= FIXED_DT;
     }
     sync();
     const speed = getSpeed();
+
+    const trackIdx = getNearestIndex(carBody.position.x, carBody.position.z);
+    const inDrsZone = isInDrsZone(trackIdx);
+    if (drsActive && !inDrsZone) drsActive = false;
 
     const dx = carGroup.position.x - startPosition.x;
     const dz = carGroup.position.z - startPosition.z;
@@ -141,10 +186,23 @@ export function createGameEngine(canvasRef, getInput, options) {
     const crossed = prevSignedDist < 0 && signedDist >= 0;
     prevSignedDist = signedDist;
 
+    if (ghostGroup.visible && ghostData && ghostData.length > 0) {
+      const f = ghostData[ghostFrameIdx];
+      ghostGroup.position.set(f.x, f.y, f.z);
+      ghostGroup.quaternion.set(f.qx, f.qy, f.qz, f.qw);
+      const s2 = tuning.carSize ?? 1;
+      ghostGroup.scale.setScalar(s2);
+      ghostGroup.position.y += tuning.carHeightOffset ?? 0;
+      if (!ghostPaused) {
+        ghostFrameIdx = (ghostFrameIdx + 1) % ghostData.length;
+      }
+    }
+
     const gear = getGear();
     const rpm = getRpm();
-    const offTrack = isOffTrack(carGroup.position.x, carGroup.position.z);
-    options?.onTick?.({ speed, gear, rpm, crossed, offTrack });
+    const carPos = { x: carBody.position.x, y: carBody.position.y, z: carBody.position.z };
+    const carQuat = { x: carBody.quaternion.x, y: carBody.quaternion.y, z: carBody.quaternion.z, w: carBody.quaternion.w };
+    options?.onTick?.({ speed, gear, rpm, crossed, offTrack, carPos, carQuat, inDrsZone, drsActive });
     if (!droneView) {
       const speedRatio = Math.min(Math.abs(speed) / tuning.maxSpeed, 1);
       chaseCam.update(carGroup, speedRatio);
@@ -176,5 +234,5 @@ export function createGameEngine(canvasRef, getInput, options) {
     prevSignedDist = 0;
   }
 
-  return { start, stop, resize, tuning, resetCar, setDroneView, setRacingLineVisible };
+  return { start, stop, resize, tuning, resetCar, setDroneView, setRacingLineVisible, setCornerLabelsVisible, setGhostData, setGhostVisible, resetGhostPlayback, setGhostPaused, activateDrs, trackPts };
 }

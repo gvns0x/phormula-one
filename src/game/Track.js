@@ -283,7 +283,7 @@ function createBarrierTexture() {
   const ctx = c.getContext('2d');
 
   // Base yellow barrier background
-  ctx.fillStyle = '#ffd000';
+  ctx.fillStyle = '#FBDF45';
   ctx.fillRect(0, 0, c.width, c.height);
 
   const tex = new THREE.CanvasTexture(c);
@@ -294,7 +294,7 @@ function createBarrierTexture() {
   img.src = '/textures/pirelli-barrier.png';
   img.onload = () => {
     // Clear + redraw yellow, then logo centered and scaled
-    ctx.fillStyle = '#ffd000';
+    ctx.fillStyle = '#FBDF45';
     ctx.fillRect(0, 0, c.width, c.height);
 
     const maxLogoWidth = c.width * 0.6;
@@ -308,6 +308,64 @@ function createBarrierTexture() {
   };
 
   return tex;
+}
+
+function makeNumberSprite(num) {
+  const size = 128;
+  const c = document.createElement('canvas');
+  c.width = size;
+  c.height = size;
+  const ctx = c.getContext('2d');
+  ctx.beginPath();
+  ctx.arc(size / 2, size / 2, size / 2 - 2, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+  ctx.fill();
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 3;
+  ctx.stroke();
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 64px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(String(num), size / 2, size / 2);
+  const tex = new THREE.CanvasTexture(c);
+  const mat = new THREE.SpriteMaterial({ map: tex, depthTest: false, sizeAttenuation: false });
+  const sprite = new THREE.Sprite(mat);
+  sprite.scale.set(0.04, 0.04, 1);
+  return sprite;
+}
+
+function buildCornerLabels(pts, rights, halfWidths) {
+  const labelsGroup = new THREE.Group();
+  const N = pts.length;
+  const N_CTRL = SECTION_MAP.length;
+  const curve = new THREE.CatmullRomCurve3(pts, true);
+  curve.arcLengthDivisions = 400;
+
+  const sectionSamples = {};
+  for (let i = 0; i < N; i++) {
+    const u = i / N;
+    const t = curve.getUtoTmapping(u);
+    const idx = Math.min(Math.floor(t * N_CTRL), N_CTRL - 1);
+    const sec = SECTION_MAP[idx];
+    if (!sectionSamples[sec]) sectionSamples[sec] = [];
+    sectionSamples[sec].push(i);
+  }
+
+  for (let sec = 1; sec <= 19; sec++) {
+    const samples = sectionSamples[sec];
+    if (!samples || samples.length === 0) continue;
+    const midIdx = samples[Math.floor(samples.length / 2)];
+    const p = pts[midIdx];
+    const r = rights[midIdx];
+    const offset = halfWidths[midIdx] + KERB_W + 6;
+    const sprite = makeNumberSprite(sec);
+    sprite.position.set(p.x + r.x * offset, 8, p.z + r.z * offset);
+    labelsGroup.add(sprite);
+  }
+
+  labelsGroup.visible = false;
+  return labelsGroup;
 }
 
 export function createTrack(world) {
@@ -399,6 +457,18 @@ export function createTrack(world) {
     for (const s of [-1, 1]) {
       const bx = f.pos.x + f.right.x * s * barrierDist;
       const bz = f.pos.z + f.right.z * s * barrierDist;
+
+      let overlaps = false;
+      for (let i = 0; i < N; i++) {
+        const dx = bx - pts[i].x;
+        const dz = bz - pts[i].z;
+        if (dx * dx + dz * dz < (halfWidths[i] + KERB_W) * (halfWidths[i] + KERB_W)) {
+          overlaps = true;
+          break;
+        }
+      }
+      if (overlaps) continue;
+
       dummy.position.set(bx, 0, bz);
       dummy.lookAt(bx + f.tangent.x, 0, bz + f.tangent.z);
       dummy.updateMatrix();
@@ -413,6 +483,7 @@ export function createTrack(world) {
       }
     }
   }
+  barriers.count = bIdx;
   barriers.instanceMatrix.needsUpdate = true;
   group.add(barriers);
 
@@ -430,13 +501,51 @@ export function createTrack(world) {
   const racingLine = buildRacingLine(pts, rights, tangents, halfWidths);
   group.add(racingLine);
 
+  const cornerLabels = buildCornerLabels(pts, rights, halfWidths);
+  group.add(cornerLabels);
+
   const startRotationY = Math.atan2(startTangent.x, startTangent.z);
+
+  // DRS zone: hairpin exit through tunnel to chicane exit (S9-S11)
+  const drsStartTarget = V3(362, 240);
+  const drsEndTarget = V3(135, 156);
+  let drsStartIdx = 0, drsEndIdx = 0;
+  let drsStartBest = Infinity, drsEndBest = Infinity;
+  for (let i = 0; i < N; i++) {
+    const d1 = (pts[i].x - drsStartTarget.x) ** 2 + (pts[i].z - drsStartTarget.z) ** 2;
+    const d2 = (pts[i].x - drsEndTarget.x) ** 2 + (pts[i].z - drsEndTarget.z) ** 2;
+    if (d1 < drsStartBest) { drsStartBest = d1; drsStartIdx = i; }
+    if (d2 < drsEndBest) { drsEndBest = d2; drsEndIdx = i; }
+  }
+
+  const drsGreenMat = new THREE.MeshBasicMaterial({
+    color: 0x00cc44,
+    transparent: true,
+    opacity: 0.6,
+    side: THREE.DoubleSide,
+    depthWrite: false,
+  });
+  for (const idx of [drsStartIdx, drsEndIdx]) {
+    const p = pts[idx], r = rights[idx], hw = halfWidths[idx];
+    const strip = new THREE.Mesh(
+      new THREE.PlaneGeometry(hw * 2, 1.2),
+      drsGreenMat
+    );
+    strip.rotation.x = -Math.PI / 2;
+    strip.rotation.y = Math.atan2(tangents[idx].x, tangents[idx].z);
+    strip.position.set(p.x, 0.04, p.z);
+    group.add(strip);
+  }
 
   function setRacingLineVisible(v) {
     racingLine.visible = v;
   }
 
-  function isOffTrack(x, z) {
+  function setCornerLabelsVisible(v) {
+    cornerLabels.visible = v;
+  }
+
+  function getNearestIndex(x, z) {
     let bestDist = Infinity;
     let bestIdx = 0;
     for (let i = 0; i < N; i++) {
@@ -445,6 +554,11 @@ export function createTrack(world) {
       const d2 = dx * dx + dz * dz;
       if (d2 < bestDist) { bestDist = d2; bestIdx = i; }
     }
+    return bestIdx;
+  }
+
+  function isOffTrack(x, z) {
+    const bestIdx = getNearestIndex(x, z);
     const r = rights[bestIdx];
     const lateral = (x - pts[bestIdx].x) * r.x + (z - pts[bestIdx].z) * r.z;
     return Math.abs(lateral) > halfWidths[bestIdx] + KERB_W;
@@ -457,6 +571,10 @@ export function createTrack(world) {
     startTangent,
     isOffTrack,
     setRacingLineVisible,
+    setCornerLabelsVisible,
+    getNearestIndex,
+    drsStartIdx,
+    drsEndIdx,
     pts,
     halfWidths,
   };

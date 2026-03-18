@@ -58,9 +58,14 @@ export function useControllerSync() {
   const keyboardRef = useKeyboardInput();
   const signalingRef = useRef(null);
   const webrtcRef = useRef(null);
+  const onRestartRef = useRef(null);
   const createRoom = useCallback(() => {
     const signaling = createSignalingClient(WS_URL);
     const webrtc = createGamePeer(signaling, (msg) => {
+      if (msg.type === 'restart') {
+        onRestartRef.current?.();
+        return;
+      }
       const next = {
         steer: typeof msg.s === 'number' ? msg.s : 0,
         throttle: typeof msg.a === 'number' ? msg.a : 0,
@@ -154,5 +159,6 @@ export function useControllerSync() {
     connectionStatus,
     errorMessage,
     cleanup,
+    onRestartRef,
   };
 }

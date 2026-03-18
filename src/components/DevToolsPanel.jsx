@@ -16,7 +16,7 @@ const params = [
   { key: 'lateralGrip',  label: 'Lateral Grip',       min: 0,    max: 20,    step: 0.5  },
 ];
 
-export function DevToolsPanel({ onToggleDroneView }) {
+export function DevToolsPanel({ onToggleDroneView, onOpenChange }) {
   const [open, setOpen] = useState(false);
   const [droneView, setDroneView] = useState(false);
   const [, forceUpdate] = useState(0);
@@ -54,7 +54,7 @@ export function DevToolsPanel({ onToggleDroneView }) {
         </button>
         <button
           className="devtools-toggle"
-          onClick={() => setOpen((v) => !v)}
+          onClick={() => setOpen((v) => { const next = !v; onOpenChange?.(next); return next; })}
           type="button"
         >
           DevTools

@@ -100,6 +100,12 @@
   color: white;
 }
 
+.overlay-right {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
 .btn-racing-line {
   padding: 0.4rem 0.75rem;
   font-size: 0.8rem;
@@ -304,34 +310,83 @@
   text-shadow: 0 0 4px rgba(255, 68, 68, 0.4);
 }
 
-/* Countdown */
+/* Lap Counter */
 
-.countdown-overlay {
+.lap-counter {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 8rem;
-  font-weight: 900;
+  top: 4.5rem;
+  right: 1.5rem;
+  font-family: 'JetBrains Mono', 'SF Mono', 'Consolas', monospace;
+  font-size: 1.1rem;
+  font-weight: 700;
   color: white;
-  text-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.5);
+  padding: 0.35rem 0.9rem;
+  border-radius: 6px;
+  letter-spacing: 0.1em;
   pointer-events: none;
-  animation: countdown-pop 0.9s ease-out forwards;
 }
 
-@keyframes countdown-pop {
-  0% {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1.2);
-  }
-  60% {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
-  }
-  100% {
-    opacity: 0;
-    transform: translate(-50%, -50%) scale(0.8);
-  }
+/* Race Finish */
+
+.finish-title {
+  font-size: 2.4rem;
+  font-weight: 900;
+  margin-bottom: 0.5rem;
+}
+
+.finish-total,
+.finish-best {
+  font-family: 'JetBrains Mono', 'SF Mono', 'Consolas', monospace;
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.finish-restart {
+  margin-top: 1rem;
+  font-size: 1rem;
+  opacity: 0.7;
+  animation: hint-pulse 2s ease-in-out infinite;
+}
+
+/* F1 Starting Lights */
+
+.f1-lights {
+  position: absolute;
+  top: 18%;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 1.5rem;
+  padding: 1rem 1.5rem;
+  background: rgba(20, 20, 20, 0.85);
+  border-radius: 12px;
+  border: 2px solid rgba(80, 80, 80, 0.5);
+  pointer-events: none;
+  transition: opacity 0.8s ease, transform 0.8s ease;
+}
+
+.f1-lights-out {
+  opacity: 0;
+  transform: translateX(-50%) translateY(-40px);
+}
+
+.f1-light {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(60, 0, 0, 0.5);
+  border: 3px solid rgba(100, 100, 100, 0.4);
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.f1-light.lit {
+  background: #cc0000;
+  border-color: rgba(255, 60, 60, 0.6);
+  box-shadow:
+    0 0 12px 4px rgba(255, 0, 0, 0.6),
+    0 0 30px 8px rgba(255, 0, 0, 0.3);
 }
 
 /* Start hint */
@@ -341,15 +396,84 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   font-size: 1.4rem;
   font-weight: 600;
   color: rgba(255, 255, 255, 0.8);
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
   pointer-events: none;
+}
+
+.start-hint:not(:has(.finish-title)) {
   animation: hint-pulse 2s ease-in-out infinite;
 }
 
 @keyframes hint-pulse {
   0%, 100% { opacity: 0.6; }
   50% { opacity: 1; }
+}
+
+/* DRS Banner */
+
+.drs-banner {
+  padding: 0.3rem 0.8rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: white;
+  background: rgba(0, 180, 80, 0.7);
+  border-radius: 4px;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.3s ease, transform 0.3s ease, background 0.2s ease;
+  pointer-events: none;
+}
+
+.drs-banner.drs-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.drs-banner.drs-active {
+  background: rgba(0, 220, 100, 0.9);
+  box-shadow: 0 0 10px rgba(0, 255, 120, 0.4);
+}
+
+/* Mini-map */
+
+.mini-map {
+  position: absolute;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  width: 160px;
+  height: 160px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+}
+
+/* Toast */
+
+.toast {
+  position: absolute;
+  bottom: 2rem;
+  left: 2rem;
+  padding: 0.6rem 1.2rem;
+  background: rgba(0, 0, 0, 0.75);
+  color: white;
+  font-size: 0.9rem;
+  font-weight: 500;
+  border-radius: 6px;
+  pointer-events: none;
+  animation: toast-fade 3s ease forwards;
+}
+
+@keyframes toast-fade {
+  0% { opacity: 0; transform: translateY(8px); }
+  10% { opacity: 1; transform: translateY(0); }
+  80% { opacity: 1; }
+  100% { opacity: 0; }
 }

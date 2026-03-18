@@ -62,9 +62,9 @@ export function createCar(world, startPos, startRotationY) {
   const forward = new CANNON.Vec3();
   const right = new CANNON.Vec3();
 
-  function applyInput(steer, throttle, brake, dt, reverse = 0) {
+  function applyInput(steer, throttle, brake, dt, reverse = 0, drsBoost = 0) {
     const { steerMax, steerRate, brakeForce, engineForce, acceleration, coastingDecay, lateralGrip } = tuning;
-    const maxSpeed = (tuning.maxSpeed ?? 0) / 3.6;
+    const maxSpeed = ((tuning.maxSpeed ?? 0) * (1 + drsBoost)) / 3.6;
     const reverseMaxSpeed = maxSpeed * 0.3;
     bodyPhys.linearDamping = tuning.linearDamping;
 
@@ -197,4 +197,51 @@ export function createCar(world, startPos, startRotationY) {
     getRpm,
     reset,
   };
+}
+
+const GHOST_MAT = new THREE.MeshStandardMaterial({
+  color: 0x00ff88,
+  transparent: true,
+  opacity: 0.35,
+  depthWrite: false,
+});
+
+export function createGhostCar() {
+  const group = new THREE.Group();
+
+  const bodyGeom = new THREE.BoxGeometry(WIDTH * 0.9, HEIGHT * 0.8, DEPTH * 0.85);
+  const cabinGeom = new THREE.BoxGeometry(WIDTH * 0.6, HEIGHT * 0.5, DEPTH * 0.4);
+  cabinGeom.translate(0, 0.15, 0.2);
+
+  group.add(new THREE.Mesh(bodyGeom, GHOST_MAT));
+  group.add(new THREE.Mesh(cabinGeom, GHOST_MAT));
+
+  const loader = new GLTFLoader();
+  loader.load(
+    '/models/f1-car.glb',
+    (gltf) => {
+      const model = gltf.scene;
+      const box = new THREE.Box3().setFromObject(model);
+      const size = new THREE.Vector3();
+      box.getSize(size);
+      const scale = Math.min(WIDTH / size.x, HEIGHT / size.y, DEPTH / size.z);
+      model.scale.setScalar(scale);
+      box.setFromObject(model);
+      const center = new THREE.Vector3();
+      box.getCenter(center);
+      model.position.sub(center);
+      model.traverse((child) => {
+        if (child.isMesh) {
+          child.material = GHOST_MAT;
+        }
+      });
+      while (group.children.length) group.remove(group.children[0]);
+      group.add(model);
+    },
+    undefined,
+    () => {}
+  );
+
+  group.visible = false;
+  return group;
 }
