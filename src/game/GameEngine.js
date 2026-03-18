@@ -86,7 +86,7 @@ export function createGameEngine(canvasRef, getInput, options) {
   const { group: trackGroup, startPosition, startRotationY, startTangent, isOffTrack, setRacingLineVisible, setCornerLabelsVisible, getNearestIndex, drsStartIdx, drsEndIdx, pts: trackPts, halfWidths: trackHW } = createTrack(world);
   scene.add(trackGroup);
 
-  const { group: carGroup, body: carBody, applyInput, sync, loadModel, getSpeed, getGear, getRpm, reset: carReset } = createCar(world, startPosition, startRotationY);
+  const { group: carGroup, body: carBody, applyInput, sync, loadModel, getSpeed, getGear, getRpm, getDamage, resetDamage, reset: carReset } = createCar(world, startPosition, startRotationY);
   scene.add(carGroup);
 
   const envGroup = createEnvironment(trackPts, trackHW, world);
@@ -117,6 +117,8 @@ export function createGameEngine(canvasRef, getInput, options) {
   }
 
   let drsActive = false;
+  let wreckCounter = 0;
+  const WRECK_THRESHOLD = 60;
 
   function isInDrsZone(idx) {
     if (drsStartIdx < drsEndIdx) return idx >= drsStartIdx && idx <= drsEndIdx;
@@ -166,7 +168,7 @@ export function createGameEngine(canvasRef, getInput, options) {
     while (acc >= FIXED_DT && acc > 0) {
       const input = getInput ? getInput() : { steer: 0, throttle: 0, brake: 0 };
       if (drsActive && (input.brake ?? 0) > 0) drsActive = false;
-      applyInput(input.steer ?? 0, input.throttle ?? 0, input.brake ?? 0, FIXED_DT, input.reverse ?? 0, drsActive ? 0.08 : 0);
+      applyInput(input.steer ?? 0, input.throttle ?? 0, input.brake ?? 0, FIXED_DT, input.reverse ?? 0, drsActive ? 0.90 : 0);
       world.step(FIXED_DT);
       if (!offTrack && isOffTrack(carBody.position.x, carBody.position.z)) {
         offTrack = true;
@@ -198,11 +200,27 @@ export function createGameEngine(canvasRef, getInput, options) {
       }
     }
 
+    const upVec = new CANNON.Vec3();
+    carBody.quaternion.vmult(new CANNON.Vec3(0, 1, 0), upVec);
+    if (upVec.y < 0.2) {
+      wreckCounter++;
+    } else {
+      wreckCounter = 0;
+    }
+    const carWrecked =
+      wreckCounter >= WRECK_THRESHOLD ||
+      carBody.position.y < -5 ||
+      carBody.position.y > 8;
+
     const gear = getGear();
     const rpm = getRpm();
+    const damage = getDamage();
     const carPos = { x: carBody.position.x, y: carBody.position.y, z: carBody.position.z };
     const carQuat = { x: carBody.quaternion.x, y: carBody.quaternion.y, z: carBody.quaternion.z, w: carBody.quaternion.w };
-    options?.onTick?.({ speed, gear, rpm, crossed, offTrack, carPos, carQuat, inDrsZone, drsActive });
+    const ghostPos = (ghostGroup.visible && ghostData && ghostData.length > 0)
+      ? { x: ghostGroup.position.x, z: ghostGroup.position.z }
+      : null;
+    options?.onTick?.({ speed, gear, rpm, crossed, offTrack, carPos, carQuat, inDrsZone, drsActive, damage, carWrecked, ghostPos });
     if (!droneView) {
       const speedRatio = Math.min(Math.abs(speed) / tuning.maxSpeed, 1);
       chaseCam.update(carGroup, speedRatio);
@@ -232,7 +250,9 @@ export function createGameEngine(canvasRef, getInput, options) {
   function resetCar() {
     carReset(startPosition, startRotationY);
     prevSignedDist = 0;
+    wreckCounter = 0;
+    resetDamage();
   }
 
-  return { start, stop, resize, tuning, resetCar, setDroneView, setRacingLineVisible, setCornerLabelsVisible, setGhostData, setGhostVisible, resetGhostPlayback, setGhostPaused, activateDrs, trackPts };
+  return { start, stop, resize, tuning, resetCar, setDroneView, setRacingLineVisible, setCornerLabelsVisible, setGhostData, setGhostVisible, resetGhostPlayback, setGhostPaused, activateDrs, trackPts, resetDamage };
 }

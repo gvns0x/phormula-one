@@ -43,16 +43,22 @@ export function createCar(world, startPos, startRotationY) {
   bodyPhys.linearDamping = 0.1;
   world.addBody(bodyPhys);
 
+  let damage = 0;
+
   bodyPhys.addEventListener('collide', (e) => {
     const impact = Math.abs(e.contact.getImpactVelocityAlongNormal());
-    if (impact > 5) {
+    if (impact > 3) {
       const intensity = Math.min(impact / 30, 1);
+      damage = Math.min(damage + intensity * 0.55, 1);
       bodyPhys.angularVelocity.y += (Math.random() - 0.5) * impact * 0.8;
       bodyPhys.angularVelocity.x += (Math.random() - 0.5) * intensity * 3;
       bodyPhys.angularVelocity.z += (Math.random() - 0.5) * intensity * 3;
       bodyPhys.velocity.y += impact * 0.25;
     }
   });
+
+  function getDamage() { return damage; }
+  function resetDamage() { damage = 0; }
 
   let steerAngle = 0;
   let lastSpeed = 0;
@@ -195,6 +201,8 @@ export function createCar(world, startPos, startRotationY) {
     getSpeed,
     getGear,
     getRpm,
+    getDamage,
+    resetDamage,
     reset,
   };
 }

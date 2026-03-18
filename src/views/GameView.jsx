@@ -4,6 +4,7 @@ import { MAX_RPM } from '../game/gearbox';
 import { useControllerSync } from '../networking/useControllerSync';
 import { DevToolsPanel } from '../components/DevToolsPanel';
 import { MiniMap } from '../components/MiniMap';
+import { CarStatus } from '../components/CarStatus';
 import './GameView.css';
 
 function formatTime(ms) {
@@ -45,26 +46,24 @@ export function GameView() {
   const [elapsed, setElapsed] = useState(0);
   const [lastLap, setLastLap] = useState(null);
   const [bestLap, setBestLap] = useState(null);
-  const [lastLapClean, setLastLapClean] = useState(null);
-  const [bestLapClean, setBestLapClean] = useState(null);
-  const [currentLapDirty, setCurrentLapDirty] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
   const [carPosition, setCarPosition] = useState(null);
+  const [ghostPosition, setGhostPosition] = useState(null);
   const [inDrsZone, setInDrsZone] = useState(false);
   const [drsActive, setDrsActive] = useState(false);
   const [currentLap, setCurrentLap] = useState(0);
-  const [raceFinished, setRaceFinished] = useState(false);
   const [totalRaceTime, setTotalRaceTime] = useState(null);
+  const [damage, setDamage] = useState(0);
+  const [carDestroyed, setCarDestroyed] = useState(false);
 
   const lapStartRef = useRef(null);
-  const cleanLapRef = useRef(true);
   const raceStateRef = useRef('idle');
   const countdownTimersRef = useRef([]);
   const inputBlockedRef = useRef(false);
   const lastTapRef = useRef({ time: 0, x: 0, y: 0 });
   const ghostRecordingRef = useRef([]);
   const ghostDataRef = useRef(null);
-  const ghostVisibleRef = useRef(false);
+  const ghostVisibleRef = useRef(true);
   const toastTimerRef = useRef(null);
   const currentLapRef = useRef(0);
   const raceStartTimeRef = useRef(null);
@@ -88,19 +87,24 @@ export function GameView() {
         setRpm(s.rpm);
         sendState(s);
         if (s.carPos) setCarPosition(s.carPos);
+        setGhostPosition(s.ghostPos ?? null);
         setInDrsZone(!!s.inDrsZone);
         setDrsActive(!!s.drsActive);
+        if (s.damage != null) setDamage(s.damage);
+
+        if (raceStateRef.current === 'racing' && (s.damage >= 1.0 || s.carWrecked)) {
+          setRaceState('finished');
+          raceStateRef.current = 'finished';
+          inputBlockedRef.current = true;
+          setCarDestroyed(true);
+          setElapsed(0);
+        }
 
         if (raceStateRef.current === 'racing' && s.carPos && s.carQuat) {
           ghostRecordingRef.current.push({
             x: s.carPos.x, y: s.carPos.y, z: s.carPos.z,
             qx: s.carQuat.x, qy: s.carQuat.y, qz: s.carQuat.z, qw: s.carQuat.w,
           });
-        }
-
-        if (s.offTrack && cleanLapRef.current) {
-          cleanLapRef.current = false;
-          setCurrentLapDirty(true);
         }
 
         if (raceStateRef.current === 'racing' && lapStartRef.current != null) {
@@ -111,19 +115,13 @@ export function GameView() {
           const now = performance.now();
           const lapTime = now - lapStartRef.current;
           if (lapTime > 5000) {
-            const wasClean = cleanLapRef.current;
             const recording = ghostRecordingRef.current;
             setLastLap(lapTime);
-            setLastLapClean(wasClean);
             setBestLap(prev => {
-              if (!wasClean) return prev;
               if (prev == null || lapTime < prev) {
-                setBestLapClean(true);
                 ghostDataRef.current = recording;
                 engineRef.current?.setGhostData(recording);
-                if (ghostVisibleRef.current) {
-                  engineRef.current?.setGhostVisible(true);
-                }
+                engineRef.current?.setGhostVisible(true);
                 return lapTime;
               }
               return prev;
@@ -142,8 +140,6 @@ export function GameView() {
               currentLapRef.current += 1;
               setCurrentLap(currentLapRef.current);
               lapStartRef.current = now;
-              cleanLapRef.current = true;
-              setCurrentLapDirty(false);
               setElapsed(0);
             }
           }
@@ -167,26 +163,24 @@ export function GameView() {
     if (!engine) return;
 
     engine.resetCar();
+    engine.resetDamage();
+    setDamage(0);
+    setCarDestroyed(false);
     inputBlockedRef.current = true;
-    cleanLapRef.current = true;
     ghostRecordingRef.current = [];
     ghostDataRef.current = null;
-    ghostVisibleRef.current = false;
+    ghostVisibleRef.current = true;
     engine.setGhostData(null);
     engine.setGhostVisible(false);
     engine.resetGhostPlayback();
     engine.setGhostPaused(true);
     currentLapRef.current = 1;
     setCurrentLap(1);
-    setRaceFinished(false);
     setTotalRaceTime(null);
-    setCurrentLapDirty(false);
     setRaceState('countdown');
     setElapsed(0);
     setLastLap(null);
-    setLastLapClean(null);
     setBestLap(null);
-    setBestLapClean(null);
     setLightsState(0);
     setLightsVisible(true);
 
@@ -227,7 +221,7 @@ export function GameView() {
       }
       if (e.key === 'g' || e.key === 'G') {
         if (!ghostDataRef.current) {
-          showToast('Complete a green lap to see the ghost car');
+          showToast('Complete a lap to see the ghost car');
           return;
         }
         ghostVisibleRef.current = !ghostVisibleRef.current;
@@ -325,27 +319,17 @@ export function GameView() {
       </div>
 
       <div className="timing-hud">
-        <div className={`timer${currentLapDirty ? ' timer-dirty' : ''}`}>{formatTime(elapsed)}</div>
+        <div className="timer">{formatTime(elapsed)}</div>
         {bestLap != null && (
           <div className="best-lap">
             <span className="lap-label">Best</span>
             <span className="lap-time">{formatTime(bestLap)}</span>
-            {bestLapClean != null && (
-              <span className={`lap-flag ${bestLapClean ? 'flag-clean' : 'flag-dirty'}`}>
-                {bestLapClean ? '\u2691' : '\u2691'}
-              </span>
-            )}
           </div>
         )}
         {lastLap != null && (
           <div className="last-lap">
             <span className="lap-label">Last</span>
             <span className="lap-time">{formatTime(lastLap)}</span>
-            {lastLapClean != null && (
-              <span className={`lap-flag ${lastLapClean ? 'flag-clean' : 'flag-dirty'}`}>
-                {lastLapClean ? '\u2691' : '\u2691'}
-              </span>
-            )}
             {delta && (
               <span className={`lap-delta ${delta.isFaster ? 'faster' : 'slower'}`}>
                 {delta.text}
@@ -363,8 +347,8 @@ export function GameView() {
         <div className="start-hint">
           {raceState === 'finished' ? (
             <>
-              <div className="finish-title">Race Complete</div>
-              <div className="finish-total">Total: {formatTime(totalRaceTime)}</div>
+              <div className="finish-title">{carDestroyed ? 'Car Destroyed' : 'Race Complete'}</div>
+              {!carDestroyed && <div className="finish-total">Total: {formatTime(totalRaceTime)}</div>}
               {bestLap != null && <div className="finish-best">Best Lap: {formatTime(bestLap)}</div>}
               <div className="finish-restart">Press Space to restart</div>
             </>
@@ -411,7 +395,10 @@ export function GameView() {
           })}
         </div>
       </div>
-      {trackPts && <MiniMap trackPts={trackPts} carPosition={carPosition} />}
+      <div className="bottom-right-panel">
+        <CarStatus damage={damage} />
+        {trackPts && <MiniMap trackPts={trackPts} carPosition={carPosition} ghostPosition={ghostPosition} />}
+      </div>
 
       {toastMessage && (
         <div className="toast" key={toastMessage}>{toastMessage}</div>

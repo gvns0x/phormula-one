@@ -225,10 +225,6 @@
   transition: color 0.3s ease;
 }
 
-.timer-dirty {
-  color: #ff4444;
-}
-
 .best-lap,
 .last-lap {
   display: flex;
@@ -293,21 +289,6 @@
   .clear-best-btn:hover {
     background: rgba(255, 255, 255, 0.25);
   }
-}
-
-.lap-flag {
-  font-size: 1.1rem;
-  line-height: 1;
-}
-
-.lap-flag.flag-clean {
-  color: #00ff88;
-  text-shadow: 0 0 4px rgba(0, 255, 136, 0.4);
-}
-
-.lap-flag.flag-dirty {
-  color: #ff4444;
-  text-shadow: 0 0 4px rgba(255, 68, 68, 0.4);
 }
 
 /* Lap Counter */
@@ -442,17 +423,54 @@
   box-shadow: 0 0 10px rgba(0, 255, 120, 0.4);
 }
 
-/* Mini-map */
+/* Bottom-right panel (car status + mini-map) */
 
-.mini-map {
+.bottom-right-panel {
   position: absolute;
   bottom: 1.5rem;
   right: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  pointer-events: none;
+}
+
+.mini-map {
   width: 160px;
   height: 160px;
   border-radius: 8px;
   background: rgba(0, 0, 0, 0.5);
   pointer-events: none;
+}
+
+/* Car Status */
+
+.car-status {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.car-chassis {
+  width: 40px;
+  height: 80px;
+  filter: drop-shadow(0 0 4px currentColor);
+}
+
+.damage-bar-track {
+  width: 80px;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.damage-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.2s ease, background-color 0.3s ease;
 }
 
 /* Toast */
