@@ -598,16 +598,76 @@
 .lap-counter {
   position: absolute;
   top: 4.5rem;
-  right: 1.5rem;
+  left: 1.5rem;
   font-family: 'JetBrains Mono', 'SF Mono', 'Consolas', monospace;
   font-size: 1.1rem;
   font-weight: 700;
   color: white;
   background: rgba(0, 0, 0, 0.5);
   padding: 0.35rem 0.9rem;
-  border-radius: 6px;
+  border-radius: var(--radius);
   letter-spacing: 0.1em;
   pointer-events: none;
+}
+
+.lap-times-overlay {
+  position: absolute;
+  top: 7.2rem;
+  left: 1.5rem;
+  padding: 0.45rem 0;
+  background: var(--bg-glass);
+  border: var(--border-glass);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-radius: var(--radius);
+  pointer-events: none;
+  z-index: 10;
+}
+
+.lap-time-row {
+  display: flex;
+  align-items: center;
+  min-width: 100px;
+  gap: 0.55rem;
+  padding: 0.4rem 0.75rem;
+  font-family: 'JetBrains Mono', 'SF Mono', 'Consolas', monospace;
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.lap-time-row:last-child {
+  border-bottom: none;
+}
+
+.lap-time-index {
+  min-width: 1rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.lap-time-value {
+  flex: 1;
+}
+
+.lap-fastest-badge {
+  position: absolute;
+  right: -20.5px;
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0px var(--radius) var(--radius) 0px;
+  font-size: 0.75rem;
+  line-height: 1;
+  color: #fff;
+  background: #7e3cff;
+  opacity: 0;
+}
+
+.lap-fastest-badge.visible {
+  opacity: 1;
 }
 
 /* Race Finish */
@@ -741,8 +801,6 @@
 .mini-map {
   width: 160px;
   height: 160px;
-  border-radius: 8px;
-  background: rgba(0, 0, 0, 0.5);
   pointer-events: none;
 }
 

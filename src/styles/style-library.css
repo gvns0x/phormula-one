@@ -8,13 +8,16 @@
   --bg-glass-hover-transition: background .2s ease-out;
   
   /* Glass – Border */
-  --border-glass: .1px solid rgba(255,255,255,.2);
+  --border-glass: .1px solid rgba(255,255,255,.1);
   --border-glass-hover: .1px solid rgba(255,255,255,.1);
 
   /* Glass – Blur */
-  --glass-blur: blur(20px);
+  --glass-blur: blur(10px);
 
   /* Glass – Click */
   --click-scale-transition: .2s ease;
   --click-scale: scale(.99);
+
+  /* Other */
+  --radius: 6px;
 }

@@ -68,6 +68,7 @@ export function GameView() {
   const [inDrsZone, setInDrsZone] = useState(false);
   const [drsActive, setDrsActive] = useState(false);
   const [currentLap, setCurrentLap] = useState(0);
+  const [lapTimes, setLapTimes] = useState(() => Array(TOTAL_LAPS).fill(null));
   const [totalRaceTime, setTotalRaceTime] = useState(null);
   const [damage, setDamage] = useState(0);
   const [carDestroyed, setCarDestroyed] = useState(false);
@@ -168,6 +169,13 @@ export function GameView() {
           const lapTime = now - lapStartRef.current;
           if (lapTime > 5000) {
             playerLastCrossTimeRef.current = now;
+            const completedLapIdx = currentLapRef.current - 1;
+            setLapTimes(prev => {
+              if (completedLapIdx < 0 || completedLapIdx >= prev.length) return prev;
+              const next = [...prev];
+              next[completedLapIdx] = lapTime;
+              return next;
+            });
 
             if (gameModeRef.current === 'timeTrial') {
               const recording = ghostRecordingRef.current;
@@ -316,6 +324,7 @@ export function GameView() {
 
     currentLapRef.current = 1;
     setCurrentLap(1);
+    setLapTimes(Array(TOTAL_LAPS).fill(null));
     setTotalRaceTime(null);
     setRaceState('countdown');
     setElapsed(0);
@@ -389,6 +398,7 @@ export function GameView() {
     setLastLap(null);
     setBestLap(null);
     setCurrentLap(0);
+    setLapTimes(Array(TOTAL_LAPS).fill(null));
     setTotalRaceTime(null);
     setDamage(0);
     setCarDestroyed(false);
@@ -531,6 +541,11 @@ export function GameView() {
 
   const isRivalMode = gameMode === 'rival';
   const playerMaxLap = Math.min(currentLap, TOTAL_LAPS);
+  const fastestLapTime = lapTimes.reduce((fastest, lapTime) => {
+    if (lapTime == null) return fastest;
+    if (fastest == null || lapTime < fastest) return lapTime;
+    return fastest;
+  }, null);
 
   const hasActiveGame = gameMode !== null;
 
@@ -677,7 +692,23 @@ export function GameView() {
           </div>
 
           {!isRivalMode && currentLap > 0 && raceState !== 'idle' && (
-            <div className="lap-counter">LAP {playerMaxLap}/{TOTAL_LAPS}</div>
+            <>
+              <div className="lap-counter">LAP {playerMaxLap}/{TOTAL_LAPS}</div>
+              <div className="lap-times-overlay">
+                {lapTimes.map((lapTime, idx) => {
+                  const isFastest = lapTime != null && fastestLapTime != null && lapTime === fastestLapTime;
+                  return (
+                    <div key={idx} className="lap-time-row">
+                      <span className="lap-time-index">{idx + 1}</span>
+                      <span className="lap-time-value">{lapTime == null ? 'NO TIME' : formatTime(lapTime)}</span>
+                      <span className={`lap-fastest-badge${isFastest ? ' visible' : ''}`} aria-hidden={!isFastest}>
+                        &#9201;
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
           )}
 
           {isRivalMode && raceState !== 'idle' && (

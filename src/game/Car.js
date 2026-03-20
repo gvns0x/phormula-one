@@ -380,9 +380,9 @@ export function createRivalCar(world, startPos, startRotationY) {
 }
 
 const GHOST_MAT = new THREE.MeshStandardMaterial({
-  color: 0x00ff88,
+  color: 0x8E55FF,
   transparent: true,
-  opacity: 0.35,
+  opacity: 0.45,
   depthWrite: false,
 });
 

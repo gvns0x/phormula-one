@@ -63,8 +63,8 @@ export function MiniMap({ trackPts, carPosition, ghostPosition, rivalPosition })
     if (ghostPosition) {
       const gx = (ghostPosition.x - minX) * scale + offX;
       const gy = (ghostPosition.z - minZ) * scale + offZ;
-      ctx.fillStyle = '#00ff88';
-      ctx.shadowColor = '#00ff88';
+      ctx.fillStyle = '#8E55FF';
+      ctx.shadowColor = '#8E55FF';
       ctx.shadowBlur = 5;
       ctx.beginPath();
       ctx.arc(gx, gy, 3.5, 0, Math.PI * 2);
