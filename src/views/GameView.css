@@ -16,8 +16,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.85);
-  backdrop-filter: blur(12px);
+  background: rgba(3, 7, 16, .95);
+  backdrop-filter: blur(2px);
 }
 
 .menu-content {
@@ -33,7 +33,6 @@
   font-weight: 400;
   color: #fff;
   letter-spacing: 0.15em;
-  text-shadow: 0 0 30px rgba(204, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.8);
   margin: 0;
 }
 
@@ -329,18 +328,29 @@
 
 .btn-create {
   padding: 0.5rem 1rem;
+  font-family: var(--font-outfit);
   font-size: 0.9rem;
-  font-weight: 600;
-  background: #cc0000;
+  font-weight: 500;
+  background: var(--bg-glass);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
   color: white;
-  border: none;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
+  transition: var(--bg-glass-hover-transition);
+  border: var(--border-glass);
 }
 
-@media (max-width: 768px) {
+
+@media (min-width: 768px) {
   .btn-create:hover {
-    background: #e60000;
+    background: var(--bg-glass-hover);
+    border: var(--border-glass-hover);
+    transition: var(--bg-glass-hover-transition);
+  }
+
+  .btn-create:active {
+    transform: scale(.99);
   }
 }
 

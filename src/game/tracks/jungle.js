@@ -27,14 +27,14 @@ export const jungleTrack = {
     [85, 110],    [90, 72],
     // Sector 09: diagonal straight NE (Reta Oposta)
     [120, 40],    [170, 12],    [230, -18],   [280, -35],
-    // Approaching right side (sector 10)
-    [320, -40],   [345, -28],
+    // Enter right side (sector 10)
+    [318, -36],
     // Right sweeper south to sector 10 apex
-    [362, -8],    [370, 20],    [366, 48],
+    [355, -18],   [385, 5],     [395, 35],    [388, 60],
     // Left curve back north through sectors 11-12
-    [356, 24],    [346, -4],    [340, -32],
+    [368, 35],    [348, 5],     [332, -28],
     // To sector 13 (far right)
-    [348, -54],   [390, -56],   [425, -48],
+    [342, -56],   [390, -60],   [428, -52],
     // Sector 14: curving south
     [442, -28],   [445, 8],     [442, 52],
     [436, 102],   [428, 142],
