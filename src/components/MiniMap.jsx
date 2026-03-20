@@ -3,7 +3,7 @@ import { useRef, useEffect, useMemo } from 'react';
 const SIZE = 160;
 const PAD = 12;
 
-export function MiniMap({ trackPts, carPosition, ghostPosition }) {
+export function MiniMap({ trackPts, carPosition, ghostPosition, rivalPosition }) {
   const canvasRef = useRef(null);
   const drawnTrackRef = useRef(false);
   const trackImageRef = useRef(null);
@@ -72,6 +72,18 @@ export function MiniMap({ trackPts, carPosition, ghostPosition }) {
       ctx.shadowBlur = 0;
     }
 
+    if (rivalPosition) {
+      const rx = (rivalPosition.x - minX) * scale + offX;
+      const ry = (rivalPosition.z - minZ) * scale + offZ;
+      ctx.fillStyle = '#0088ff';
+      ctx.shadowColor = '#0088ff';
+      ctx.shadowBlur = 5;
+      ctx.beginPath();
+      ctx.arc(rx, ry, 3.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    }
+
     if (carPosition) {
       const cx = (carPosition.x - minX) * scale + offX;
       const cy = (carPosition.z - minZ) * scale + offZ;
@@ -83,7 +95,7 @@ export function MiniMap({ trackPts, carPosition, ghostPosition }) {
       ctx.fill();
       ctx.shadowBlur = 0;
     }
-  }, [carPosition, ghostPosition, transform]);
+  }, [carPosition, ghostPosition, rivalPosition, transform]);
 
   return (
     <canvas

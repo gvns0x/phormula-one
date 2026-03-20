@@ -6,84 +6,14 @@ const BARRIER_GAP = 2.8;
 const BARRIER_H = 1.2;
 const N_SAMPLES = 800;
 
-const SECTION_WIDTHS = {
-  1: 12, 2: 11, 3: 10, 4: 10, 5: 9, 6: 9, 7: 9, 8: 10,
-  9: 11, 10: 10, 11: 9, 12: 8, 13: 9, 14: 8, 15: 8, 16: 9,
-  17: 9, 18: 10, 19: 13,
-};
-
-const SECTION_MAP = [
-  19, 19, 19, 19, 19,
-  1, 1, 1,
-  2, 2,
-  3, 3,
-  4, 4,
-  5, 5, 5,
-  6, 6,
-  7,
-  8, 8, 8, 8, 8,
-  9, 9, 9, 9, 9, 9,
-  10, 10,
-  11, 11,
-  12, 12,
-  13, 13,
-  14, 14,
-  15, 15,
-  16, 16,
-  17, 17, 17, 17, 17,
-  18, 18,
-];
-
 function V3(x, z) {
   return new THREE.Vector3(x, 0, z);
 }
 
-function sampleCenterline() {
-  const cp = [
-    // S19: Pit straight (north) + Start/Finish (curving east)
-    V3(-195, 130),  V3(-192, 95),   V3(-188, 60),
-    V3(-150, 15),   V3(-80, 5),
-    // S1: Sainte Devote
-    V3(-20, 14),    V3(22, 6),      V3(55, 0),
-    // S2: Beau Rivage (long east straight)
-    V3(130, -5),    V3(205, -8),
-    // S3: Massenet
-    V3(260, -5),    V3(300, 0),
-    // S4: Casino
-    V3(340, 8),     V3(368, 18),
-    // S5: Casino Square (big right curve south)
-    V3(392, 35),    V3(408, 58),    V3(415, 85),
-    // S6: Mirabeau Haute
-    V3(418, 115),   V3(419, 140),
-    // S7: Mirabeau Bas
-    V3(420, 168),
-    // S8: Portier + Grand Hotel Hairpin
-    V3(420, 195),   V3(418, 218),
-    V3(414, 240),   V3(404, 258),   V3(385, 265),
-    // S9: Hairpin exit + Tunnel (sweeping west)
-    V3(368, 258),   V3(362, 240),
-    V3(348, 218),   V3(325, 198),
-    V3(295, 182),   V3(260, 170),
-    // S10: Nouvelle Chicane
-    V3(225, 162),   V3(195, 158),
-    // S11: Chicane exit
-    V3(165, 160),   V3(135, 156),
-    // S12: Tabac
-    V3(95, 152),    V3(52, 150),
-    // S13: Piscine entry (chicane S-curves)
-    V3(15, 155),    V3(-8, 170),
-    // S14: Louis Chiron
-    V3(4, 185),     V3(-14, 200),
-    // S15: Pool exit
-    V3(-35, 212),   V3(-58, 225),
-    // S16
-    V3(-80, 238),   V3(-105, 250),
-    // S17: La Rascasse (tight right hairpin)
-    V3(-130, 260),  V3(-158, 268),  V3(-180, 262),
-    V3(-194, 248),  V3(-196, 228),
-    // S18: Anthony Noghes (heading north)
-    V3(-192, 200),  V3(-196, 168),
-  ];
+function sampleCenterline(trackConfig) {
+  const cp = trackConfig.centerline.map(([x, z]) => V3(x, z));
+  const sectionWidths = trackConfig.sectionWidths;
+  const sectionMap = trackConfig.sectionMap;
 
   const N_CTRL = cp.length;
   const curve = new THREE.CatmullRomCurve3(cp, true);
@@ -97,7 +27,8 @@ function sampleCenterline() {
     pts.push(curve.getPointAt(u));
     const t = curve.getUtoTmapping(u);
     const idx = Math.min(Math.floor(t * N_CTRL), N_CTRL - 1);
-    halfWidths.push(SECTION_WIDTHS[SECTION_MAP[idx]] / 2);
+    const secIdx = idx < sectionMap.length ? idx : sectionMap.length - 1;
+    halfWidths.push((sectionWidths[sectionMap[secIdx]] ?? 10) / 2);
   }
 
   for (let pass = 0; pass < 12; pass++) {
@@ -184,10 +115,7 @@ function interpAt(target, pts, rights, tangents, dists, totalLen, halfWidths) {
   };
 }
 
-function buildRacingLine(pts, rights, tangents, halfWidths) {
-  const N = pts.length;
-  const lineGroup = new THREE.Group();
-
+function computeRacingLineOffsets(tangents, halfWidths, N) {
   const curvature = new Float32Array(N);
   for (let i = 0; i < N; i++) {
     const next = (i + 1) % N;
@@ -216,6 +144,15 @@ function buildRacingLine(pts, rights, tangents, halfWidths) {
     const limit = halfWidths[i] * MAX_FRAC;
     offset[i] = Math.max(-limit, Math.min(limit, offset[i]));
   }
+
+  return { offset, curvature };
+}
+
+function buildRacingLine(pts, rights, tangents, halfWidths) {
+  const N = pts.length;
+  const lineGroup = new THREE.Group();
+
+  const { offset, curvature } = computeRacingLineOffsets(tangents, halfWidths, N);
 
   const ribbonGeom = buildRibbon(pts, rights, Array.from(offset), 0.4, 0.045);
   const ribbonMat = new THREE.MeshBasicMaterial({
@@ -282,7 +219,6 @@ function createBarrierTexture() {
   c.height = 128;
   const ctx = c.getContext('2d');
 
-  // Base yellow barrier background
   ctx.fillStyle = '#FBDF45';
   ctx.fillRect(0, 0, c.width, c.height);
 
@@ -293,7 +229,6 @@ function createBarrierTexture() {
   const img = new Image();
   img.src = '/textures/pirelli-barrier.png';
   img.onload = () => {
-    // Clear + redraw yellow, then logo centered and scaled
     ctx.fillStyle = '#FBDF45';
     ctx.fillRect(0, 0, c.width, c.height);
 
@@ -335,10 +270,10 @@ function makeNumberSprite(num) {
   return sprite;
 }
 
-function buildCornerLabels(pts, rights, halfWidths) {
+function buildCornerLabels(pts, rights, halfWidths, sectionMap) {
   const labelsGroup = new THREE.Group();
   const N = pts.length;
-  const N_CTRL = SECTION_MAP.length;
+  const N_CTRL = sectionMap.length;
   const curve = new THREE.CatmullRomCurve3(pts, true);
   curve.arcLengthDivisions = 400;
 
@@ -347,12 +282,13 @@ function buildCornerLabels(pts, rights, halfWidths) {
     const u = i / N;
     const t = curve.getUtoTmapping(u);
     const idx = Math.min(Math.floor(t * N_CTRL), N_CTRL - 1);
-    const sec = SECTION_MAP[idx];
+    const sec = sectionMap[idx];
     if (!sectionSamples[sec]) sectionSamples[sec] = [];
     sectionSamples[sec].push(i);
   }
 
-  for (let sec = 1; sec <= 19; sec++) {
+  const maxSection = Math.max(...sectionMap);
+  for (let sec = 1; sec <= maxSection; sec++) {
     const samples = sectionSamples[sec];
     if (!samples || samples.length === 0) continue;
     const midIdx = samples[Math.floor(samples.length / 2)];
@@ -368,9 +304,9 @@ function buildCornerLabels(pts, rights, halfWidths) {
   return labelsGroup;
 }
 
-export function createTrack(world) {
+export function createTrack(world, trackConfig) {
   const group = new THREE.Group();
-  const { pts, halfWidths, startTangent } = sampleCenterline();
+  const { pts, halfWidths, startTangent } = sampleCenterline(trackConfig);
   const { tangents, rights } = getFrames(pts);
   const dists = cumDists(pts);
   const N = pts.length;
@@ -501,14 +437,22 @@ export function createTrack(world) {
   const racingLine = buildRacingLine(pts, rights, tangents, halfWidths);
   group.add(racingLine);
 
-  const cornerLabels = buildCornerLabels(pts, rights, halfWidths);
+  const { offset: rlOffsets } = computeRacingLineOffsets(tangents, halfWidths, N);
+  const racingLinePts = pts.map((p, i) => ({
+    x: p.x + rights[i].x * rlOffsets[i],
+    z: p.z + rights[i].z * rlOffsets[i],
+  }));
+
+  const cornerLabels = buildCornerLabels(pts, rights, halfWidths, trackConfig.sectionMap);
   group.add(cornerLabels);
 
   const startRotationY = Math.atan2(startTangent.x, startTangent.z);
 
-  // DRS zone: hairpin exit through tunnel to chicane exit (S9-S11)
-  const drsStartTarget = V3(362, 240);
-  const drsEndTarget = V3(135, 156);
+  // DRS zone
+  const drsStart = trackConfig.drsZone.start;
+  const drsEnd = trackConfig.drsZone.end;
+  const drsStartTarget = V3(drsStart[0], drsStart[1]);
+  const drsEndTarget = V3(drsEnd[0], drsEnd[1]);
   let drsStartIdx = 0, drsEndIdx = 0;
   let drsStartBest = Infinity, drsEndBest = Infinity;
   for (let i = 0; i < N; i++) {
@@ -577,5 +521,6 @@ export function createTrack(world) {
     drsEndIdx,
     pts,
     halfWidths,
+    racingLinePts,
   };
 }

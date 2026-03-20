@@ -1,31 +1,60 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { createTrack } from './Track';
-import { createCar, createGhostCar } from './Car';
+import { createCar, createGhostCar, createRivalCar } from './Car';
 import { createChaseCamera } from './Camera';
 import { createEnvironment } from './Environment';
 import { tuning } from './tuning';
+import { TRACKS } from './tracks/index';
 
 const FIXED_DT = 1 / 60;
 const CAR_MODEL_URL = '/models/f1-car.glb';
 
-function createGroundTexture() {
+function createGroundTexture(themeId) {
   const size = 256;
   const canvas = document.createElement('canvas');
   canvas.width = size;
   canvas.height = size;
   const ctx = canvas.getContext('2d');
-  ctx.fillStyle = '#3a7d2c';
-  ctx.fillRect(0, 0, size, size);
-  ctx.strokeStyle = '#2d6821';
-  ctx.lineWidth = 2;
-  const step = size / 4;
-  for (let x = 0; x <= size; x += step) {
-    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, size); ctx.stroke();
+
+  if (themeId === 'jungle') {
+    ctx.fillStyle = '#2a5e1a';
+    ctx.fillRect(0, 0, size, size);
+    ctx.strokeStyle = '#1e4a12';
+    ctx.lineWidth = 3;
+    const step = size / 6;
+    for (let x = 0; x <= size; x += step) {
+      ctx.beginPath(); ctx.moveTo(x + Math.random() * 4, 0); ctx.lineTo(x + Math.random() * 4, size); ctx.stroke();
+    }
+    for (let y = 0; y <= size; y += step) {
+      ctx.beginPath(); ctx.moveTo(0, y + Math.random() * 4); ctx.lineTo(size, y + Math.random() * 4); ctx.stroke();
+    }
+  } else if (themeId === 'coastal') {
+    ctx.fillStyle = '#8aad6a';
+    ctx.fillRect(0, 0, size, size);
+    ctx.strokeStyle = '#7a9a5a';
+    ctx.lineWidth = 1;
+    const step = size / 4;
+    for (let x = 0; x <= size; x += step) {
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, size); ctx.stroke();
+    }
+    for (let y = 0; y <= size; y += step) {
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(size, y); ctx.stroke();
+    }
+  } else {
+    ctx.fillStyle = '#3a7d2c';
+    ctx.fillRect(0, 0, size, size);
+    ctx.strokeStyle = '#2d6821';
+    ctx.lineWidth = 2;
+    const step = size / 4;
+    for (let x = 0; x <= size; x += step) {
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, size); ctx.stroke();
+    }
+    for (let y = 0; y <= size; y += step) {
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(size, y); ctx.stroke();
+    }
   }
-  for (let y = 0; y <= size; y += step) {
-    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(size, y); ctx.stroke();
-  }
+
   const tex = new THREE.CanvasTexture(canvas);
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
   tex.repeat.set(120, 120);
@@ -33,9 +62,13 @@ function createGroundTexture() {
 }
 
 export function createGameEngine(canvasRef, getInput, options) {
+  const trackId = options?.trackId ?? 'monaco';
+  const trackConfig = TRACKS[trackId] ?? TRACKS.monaco;
+  const theme = trackConfig.theme;
+
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x87ceeb);
-  scene.fog = new THREE.Fog(0x87ceeb, 200, 900);
+  scene.background = new THREE.Color(theme.sky);
+  scene.fog = new THREE.Fog(theme.fog, theme.fogNear, theme.fogFar);
 
   const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 2000);
   camera.position.set(0, 10, 20);
@@ -44,11 +77,16 @@ export function createGameEngine(canvasRef, getInput, options) {
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
-  const ambient = new THREE.AmbientLight(0x404040);
+  const ambient = new THREE.AmbientLight(0x404040, theme.ambientIntensity / 0.25);
   scene.add(ambient);
-  const sun = new THREE.DirectionalLight(0xffffff, 1);
-  sun.position.set(200, 300, -50);
-  sun.target.position.set(110, 0, 130);
+  const sun = new THREE.DirectionalLight(0xffffff, theme.sunIntensity);
+  sun.position.set(...theme.sunPosition);
+  const trackBoundsCenter = trackConfig.centerline.reduce(
+    (acc, [x, z]) => ({ x: acc.x + x, z: acc.z + z }),
+    { x: 0, z: 0 }
+  );
+  const nPts = trackConfig.centerline.length;
+  sun.target.position.set(trackBoundsCenter.x / nPts, 0, trackBoundsCenter.z / nPts);
   sun.castShadow = true;
   sun.shadow.mapSize.width = 4096;
   sun.shadow.mapSize.height = 4096;
@@ -73,27 +111,149 @@ export function createGameEngine(canvasRef, getInput, options) {
   groundBody.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
   world.addBody(groundBody);
 
-  // Visible ground with grass grid texture
   const groundMesh = new THREE.Mesh(
     new THREE.PlaneGeometry(1200, 1200),
-    new THREE.MeshStandardMaterial({ map: createGroundTexture(), roughness: 1 })
+    new THREE.MeshStandardMaterial({ map: createGroundTexture(theme.environment), roughness: 1 })
   );
   groundMesh.rotation.x = -Math.PI / 2;
   groundMesh.position.y = -0.01;
   groundMesh.receiveShadow = true;
   scene.add(groundMesh);
 
-  const { group: trackGroup, startPosition, startRotationY, startTangent, isOffTrack, setRacingLineVisible, setCornerLabelsVisible, getNearestIndex, drsStartIdx, drsEndIdx, pts: trackPts, halfWidths: trackHW } = createTrack(world);
+  const mode = options?.mode ?? 'timeTrial';
+
+  const { group: trackGroup, startPosition, startRotationY, startTangent, isOffTrack, setRacingLineVisible, setCornerLabelsVisible, getNearestIndex, drsStartIdx, drsEndIdx, pts: trackPts, halfWidths: trackHW, racingLinePts } = createTrack(world, trackConfig);
   scene.add(trackGroup);
 
-  const { group: carGroup, body: carBody, applyInput, sync, loadModel, getSpeed, getGear, getRpm, getDamage, resetDamage, reset: carReset } = createCar(world, startPosition, startRotationY);
+  const startRight = { x: -startTangent.z, z: startTangent.x };
+  const lateralOffset = 2.5;
+
+  const playerStartPos = mode === 'rival'
+    ? { x: startPosition.x - startRight.x * lateralOffset, y: startPosition.y, z: startPosition.z - startRight.z * lateralOffset }
+    : { x: startPosition.x, y: startPosition.y, z: startPosition.z };
+
+  const rivalStartPos = {
+    x: startPosition.x + startRight.x * lateralOffset,
+    y: startPosition.y,
+    z: startPosition.z + startRight.z * lateralOffset,
+  };
+
+  const { group: carGroup, body: carBody, applyInput, sync, loadModel, getSpeed, getGear, getRpm, getDamage, resetDamage, reset: carReset } = createCar(world, playerStartPos, startRotationY);
   scene.add(carGroup);
 
-  const envGroup = createEnvironment(trackPts, trackHW, world);
+  const envGroup = createEnvironment(trackPts, trackHW, world, theme.environment);
   scene.add(envGroup);
 
   const ghostGroup = createGhostCar();
   scene.add(ghostGroup);
+
+  let rival = null;
+  if (mode === 'rival') {
+    rival = createRivalCar(world, rivalStartPos, startRotationY);
+    scene.add(rival.group);
+    rival.loadModel(CAR_MODEL_URL);
+  }
+
+  const trackCurvature = new Float32Array(trackPts.length);
+  if (mode === 'rival') {
+    const nPts = trackPts.length;
+    for (let i = 0; i < nPts; i++) {
+      const prev = trackPts[(i - 1 + nPts) % nPts];
+      const curr = trackPts[i];
+      const next = trackPts[(i + 1) % nPts];
+      const dx1 = curr.x - prev.x, dz1 = curr.z - prev.z;
+      const dx2 = next.x - curr.x, dz2 = next.z - curr.z;
+      const cross = dx1 * dz2 - dz1 * dx2;
+      const len1 = Math.sqrt(dx1 * dx1 + dz1 * dz1) || 1;
+      const len2 = Math.sqrt(dx2 * dx2 + dz2 * dz2) || 1;
+      trackCurvature[i] = Math.abs(cross / (len1 * len2));
+    }
+  }
+
+  let rivalPrevSignedDist = 0;
+  let rivalInputPaused = true;
+  let rivalCurrentIdx = 0;
+
+  const nRlPts = racingLinePts.length;
+  const rlDists = new Float32Array(nRlPts);
+  for (let i = 1; i < nRlPts; i++) {
+    const dx = racingLinePts[i].x - racingLinePts[i - 1].x;
+    const dz = racingLinePts[i].z - racingLinePts[i - 1].z;
+    rlDists[i] = rlDists[i - 1] + Math.sqrt(dx * dx + dz * dz);
+  }
+  const rlLast = racingLinePts[nRlPts - 1];
+  const rlFirst = racingLinePts[0];
+  const rlTotalLen = rlDists[nRlPts - 1] +
+    Math.sqrt((rlFirst.x - rlLast.x) ** 2 + (rlFirst.z - rlLast.z) ** 2);
+
+  let rivalDist = 0;
+  let rivalSpeedMs = 0;
+
+  if (rival) {
+    rival.body.type = CANNON.Body.KINEMATIC;
+    rival.body.mass = 0;
+    rival.body.updateMassProperties();
+  }
+
+  const AI_MAX_SPEED_FACTOR = 0.78;
+
+  function advanceRival(dt) {
+    if (!rival || rivalInputPaused) return;
+
+    const wrappedDist = ((rivalDist % rlTotalLen) + rlTotalLen) % rlTotalLen;
+    let segIdx = 0;
+    for (let i = nRlPts - 1; i >= 0; i--) {
+      if (wrappedDist >= rlDists[i]) { segIdx = i; break; }
+    }
+
+    let maxCurv = 0;
+    for (let i = 0; i < 70; i++) {
+      const ci = (segIdx + i) % nRlPts;
+      if (trackCurvature[ci] > maxCurv) maxCurv = trackCurvature[ci];
+    }
+
+    const baseMaxKmh = (tuning.maxSpeed ?? 300) * AI_MAX_SPEED_FACTOR;
+    let targetKmh = baseMaxKmh;
+    const curvThreshold = 0.02;
+    if (maxCurv > curvThreshold) {
+      const factor = Math.max(0.12, 1.0 - (maxCurv - curvThreshold) * 18);
+      targetKmh = baseMaxKmh * factor;
+    }
+    const targetMs = targetKmh / 3.6;
+
+    if (rivalSpeedMs < targetMs) {
+      rivalSpeedMs = Math.min(rivalSpeedMs + 14 * dt, targetMs);
+    } else {
+      rivalSpeedMs = Math.max(rivalSpeedMs - 35 * dt, targetMs);
+    }
+
+    rivalDist += rivalSpeedMs * dt;
+
+    const newWrapped = ((rivalDist % rlTotalLen) + rlTotalLen) % rlTotalLen;
+    let newSegIdx = 0;
+    for (let i = nRlPts - 1; i >= 0; i--) {
+      if (newWrapped >= rlDists[i]) { newSegIdx = i; break; }
+    }
+    const nextIdx = (newSegIdx + 1) % nRlPts;
+    const segStart = rlDists[newSegIdx];
+    const segEnd = nextIdx === 0 ? rlTotalLen : rlDists[nextIdx];
+    const segLen = segEnd - segStart;
+    const t = segLen > 0 ? (newWrapped - segStart) / segLen : 0;
+
+    const px = racingLinePts[newSegIdx].x + (racingLinePts[nextIdx].x - racingLinePts[newSegIdx].x) * t;
+    const pz = racingLinePts[newSegIdx].z + (racingLinePts[nextIdx].z - racingLinePts[newSegIdx].z) * t;
+
+    rival.body.position.set(px, startPosition.y, pz);
+
+    const tx = racingLinePts[nextIdx].x - racingLinePts[newSegIdx].x;
+    const tz = racingLinePts[nextIdx].z - racingLinePts[newSegIdx].z;
+    const tLen = Math.sqrt(tx * tx + tz * tz) || 1;
+    rival.body.quaternion.setFromEuler(0, Math.atan2(tx, tz), 0);
+
+    rival.body.velocity.set((tx / tLen) * rivalSpeedMs, 0, (tz / tLen) * rivalSpeedMs);
+
+    rivalCurrentIdx = newSegIdx;
+  }
 
   let ghostData = null;
   let ghostFrameIdx = 0;
@@ -140,8 +300,12 @@ export function createGameEngine(canvasRef, getInput, options) {
   let acc = 0;
   let droneView = false;
 
-  const DRONE_POS = new THREE.Vector3(68, 400, 24);
-  const DRONE_LOOK = new THREE.Vector3(68, 0, 24);
+  const trackCenter = trackConfig.centerline.reduce(
+    (a, [x, z]) => ({ x: a.x + x / trackConfig.centerline.length, z: a.z + z / trackConfig.centerline.length }),
+    { x: 0, z: 0 }
+  );
+  const DRONE_POS = new THREE.Vector3(trackCenter.x, 400, trackCenter.z);
+  const DRONE_LOOK = new THREE.Vector3(trackCenter.x, 0, trackCenter.z);
   const DRONE_FOV = 60;
 
   function setDroneView(enabled) {
@@ -168,7 +332,8 @@ export function createGameEngine(canvasRef, getInput, options) {
     while (acc >= FIXED_DT && acc > 0) {
       const input = getInput ? getInput() : { steer: 0, throttle: 0, brake: 0 };
       if (drsActive && (input.brake ?? 0) > 0) drsActive = false;
-      applyInput(input.steer ?? 0, input.throttle ?? 0, input.brake ?? 0, FIXED_DT, input.reverse ?? 0, drsActive ? 0.90 : 0);
+      applyInput(input.steer ?? 0, input.throttle ?? 0, input.brake ?? 0, FIXED_DT, input.reverse ?? 0, drsActive ? 0.10 : 0);
+      if (rival) advanceRival(FIXED_DT);
       world.step(FIXED_DT);
       if (!offTrack && isOffTrack(carBody.position.x, carBody.position.z)) {
         offTrack = true;
@@ -176,6 +341,7 @@ export function createGameEngine(canvasRef, getInput, options) {
       acc -= FIXED_DT;
     }
     sync();
+    if (rival) rival.sync();
     const speed = getSpeed();
 
     const trackIdx = getNearestIndex(carBody.position.x, carBody.position.z);
@@ -187,6 +353,21 @@ export function createGameEngine(canvasRef, getInput, options) {
     const signedDist = dx * startTangent.x + dz * startTangent.z;
     const crossed = prevSignedDist < 0 && signedDist >= 0;
     prevSignedDist = signedDist;
+
+    let rivalCrossed = false;
+    let rivalTrackIdx = 0;
+    let rivalSpeed = 0;
+    let rivalPos = null;
+    if (rival) {
+      const rdx = rival.group.position.x - startPosition.x;
+      const rdz = rival.group.position.z - startPosition.z;
+      const rSignedDist = rdx * startTangent.x + rdz * startTangent.z;
+      rivalCrossed = rivalPrevSignedDist < 0 && rSignedDist >= 0;
+      rivalPrevSignedDist = rSignedDist;
+      rivalTrackIdx = rivalCurrentIdx;
+      rivalSpeed = rivalSpeedMs;
+      rivalPos = { x: rival.body.position.x, y: rival.body.position.y, z: rival.body.position.z };
+    }
 
     if (ghostGroup.visible && ghostData && ghostData.length > 0) {
       const f = ghostData[ghostFrameIdx];
@@ -220,7 +401,7 @@ export function createGameEngine(canvasRef, getInput, options) {
     const ghostPos = (ghostGroup.visible && ghostData && ghostData.length > 0)
       ? { x: ghostGroup.position.x, z: ghostGroup.position.z }
       : null;
-    options?.onTick?.({ speed, gear, rpm, crossed, offTrack, carPos, carQuat, inDrsZone, drsActive, damage, carWrecked, ghostPos });
+    options?.onTick?.({ speed, gear, rpm, crossed, offTrack, carPos, carQuat, inDrsZone, drsActive, damage, carWrecked, ghostPos, trackIdx, rivalCrossed, rivalTrackIdx, rivalSpeed, rivalPos });
     if (!droneView) {
       const speedRatio = Math.min(Math.abs(speed) / tuning.maxSpeed, 1);
       chaseCam.update(carGroup, speedRatio);
@@ -248,11 +429,25 @@ export function createGameEngine(canvasRef, getInput, options) {
   }
 
   function resetCar() {
-    carReset(startPosition, startRotationY);
+    carReset(playerStartPos, startRotationY);
     prevSignedDist = 0;
     wreckCounter = 0;
     resetDamage();
   }
 
-  return { start, stop, resize, tuning, resetCar, setDroneView, setRacingLineVisible, setCornerLabelsVisible, setGhostData, setGhostVisible, resetGhostPlayback, setGhostPaused, activateDrs, trackPts, resetDamage };
+  function resetRivalCar() {
+    if (!rival) return;
+    rival.reset(rivalStartPos, startRotationY);
+    rivalPrevSignedDist = 0;
+    rivalCurrentIdx = 0;
+    rivalDist = 0;
+    rivalSpeedMs = 0;
+    rival.resetDamage();
+  }
+
+  function setRivalInputPaused(v) {
+    rivalInputPaused = v;
+  }
+
+  return { start, stop, resize, tuning, resetCar, setDroneView, setRacingLineVisible, setCornerLabelsVisible, setGhostData, setGhostVisible, resetGhostPlayback, setGhostPaused, activateDrs, trackPts, resetDamage, resetRivalCar, setRivalInputPaused };
 }

@@ -7,6 +7,298 @@
   overflow: hidden;
 }
 
+/* Main Menu */
+
+.game-menu {
+  position: absolute;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(12px);
+}
+
+.menu-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.2rem;
+}
+
+.menu-title {
+  font-family: 'Audiowide', cursive;
+  font-size: 3.5rem;
+  font-weight: 400;
+  color: #fff;
+  letter-spacing: 0.15em;
+  text-shadow: 0 0 30px rgba(204, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.8);
+  margin: 0;
+}
+
+.menu-subtitle {
+  font-family: 'Audiowide', cursive;
+  font-size: 1.1rem;
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.25em;
+  margin: 0;
+}
+
+.menu-options {
+  display: flex;
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.menu-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  width: 240px;
+  padding: 2rem 1.5rem;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, transform 0.15s;
+  color: white;
+  text-align: center;
+  font-family: inherit;
+}
+
+@media (max-width: 768px) {
+  .menu-card:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: translateY(-2px);
+  }
+}
+
+.menu-card:active {
+  transform: scale(0.97);
+}
+
+.menu-card-icon {
+  font-size: 2.4rem;
+}
+
+.menu-card-title {
+  font-family: 'Audiowide', cursive;
+  font-size: 1.15rem;
+  font-weight: 400;
+  letter-spacing: 0.05em;
+}
+
+.menu-card-desc {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.5);
+  line-height: 1.4;
+}
+
+.menu-card-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 240px;
+}
+
+.menu-card.menu-card-half {
+  flex: 1;
+  padding: 1.2rem 1.5rem;
+  justify-content: center;
+}
+
+.menu-step-label {
+  font-family: 'Audiowide', cursive;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  margin: 0;
+}
+
+.menu-tracks {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  margin-top: 1rem;
+  max-width: 540px;
+}
+
+.track-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 1.4rem 1rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, transform 0.15s, box-shadow 0.2s;
+  color: white;
+  text-align: center;
+  font-family: inherit;
+  min-width: 200px;
+}
+
+@media (max-width: 768px) {
+  .track-card:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: var(--track-color, rgba(255, 255, 255, 0.3));
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px color-mix(in srgb, var(--track-color, #fff) 30%, transparent);
+  }
+}
+
+.track-card:active {
+  transform: scale(0.97);
+}
+
+.track-card-selected {
+  border-color: var(--track-color, #cc0000);
+  background: color-mix(in srgb, var(--track-color, #cc0000) 15%, transparent);
+  box-shadow: 0 0 20px color-mix(in srgb, var(--track-color, #cc0000) 25%, transparent);
+}
+
+.track-card-icon {
+  font-size: 2rem;
+}
+
+.track-card-name {
+  font-family: 'Audiowide', cursive;
+  font-size: 1rem;
+  font-weight: 400;
+  letter-spacing: 0.05em;
+}
+
+.track-card-desc {
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.45);
+  line-height: 1.3;
+}
+
+.menu-back-btn {
+  margin-top: 1rem;
+  padding: 0.5rem 1.2rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  font-family: inherit;
+}
+
+@media (max-width: 768px) {
+  .menu-back-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: white;
+  }
+}
+
+.menu-hint {
+  margin-top: 1.5rem;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.3);
+  letter-spacing: 0.05em;
+}
+
+/* Leaderboard */
+
+.leaderboard {
+  position: absolute;
+  top: 4.5rem;
+  right: 1.5rem;
+  min-width: 220px;
+  background: rgba(10, 10, 10, 0.85);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.leaderboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  background: rgba(204, 0, 0, 0.7);
+}
+
+.leaderboard-title {
+  font-family: 'Audiowide', cursive;
+  font-size: 0.9rem;
+  color: white;
+  letter-spacing: 0.1em;
+}
+
+.leaderboard-lap {
+  font-family: 'JetBrains Mono', 'SF Mono', 'Consolas', monospace;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  letter-spacing: 0.05em;
+}
+
+.leaderboard-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.45rem 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  font-family: 'JetBrains Mono', 'SF Mono', 'Consolas', monospace;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.leaderboard-row:last-child {
+  border-bottom: none;
+}
+
+.leaderboard-me {
+  color: #fff;
+  font-weight: 700;
+}
+
+.lb-pos {
+  font-weight: 700;
+  min-width: 1.2rem;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.lb-name {
+  flex: 1;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.lb-gap {
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.8rem;
+}
+
+/* Finish states */
+
+.finish-win {
+  color: #00ff88;
+}
+
+.finish-lose {
+  color: #ff4444;
+}
+
 .game-canvas {
   display: block;
   width: 100%;
