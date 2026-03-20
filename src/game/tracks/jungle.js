@@ -6,49 +6,68 @@ export const jungleTrack = {
   icon: '\u{1F334}',
 
   centerline: [
-    // Long flowing start straight heading south-east
-    [0, -180],    [40, -175],   [90, -160],
-    // Wide sweeping right through clearing
-    [140, -130],  [175, -90],   [190, -40],
-    // Gentle S-curves through dense canopy
-    [185, 10],    [165, 55],    [130, 90],
-    // Fast left kink
-    [85, 115],    [40, 125],
-    // Tight hairpin right around ancient ruins
-    [0, 130],     [-30, 145],   [-40, 175],
-    [-25, 205],   [10, 220],
-    // Long sweeping right through river valley
-    [60, 225],    [110, 215],   [155, 190],
-    [180, 155],   [195, 115],
-    // Chicane through bamboo grove
-    [200, 75],    [210, 40],    [225, 10],
-    // Fast left into back straight
-    [230, -30],   [220, -70],   [195, -105],
-    // Medium right
-    [160, -135],  [120, -155],
-    // Sweeping left back to start
-    [75, -170],   [35, -180],
+    // Start/Finish (bottom right), heading left
+    [365, 190],
+    // Bottom straight heading left (sector 01)
+    [280, 190],   [170, 190],   [60, 190],
+    // Turn 1: left-hander going up (sector 02)
+    [0, 185],     [-40, 168],   [-60, 148],
+    // Senna S going up left side (sectors 02-03)
+    [-75, 118],   [-65, 88],    [-80, 60],
+    // Far left hairpin (sector 03)
+    [-88, 35],    [-82, 10],    [-65, -5],
+    // Right across the top to sector 04
+    [-30, -12],   [15, -18],    [55, -20],
+    // Switchback left and down (sector 05)
+    [30, -8],     [-5, 18],     [-30, 40],
+    // Down through sectors 06-07
+    [-5, 68],     [28, 95],     [60, 125],
+    [80, 140],
+    // Sector 08: back up
+    [85, 110],    [90, 72],
+    // Sector 09: diagonal straight NE (Reta Oposta)
+    [120, 40],    [170, 12],    [230, -18],   [280, -35],
+    // Approaching right side (sector 10)
+    [320, -40],   [345, -28],
+    // Right sweeper south to sector 10 apex
+    [362, -8],    [370, 20],    [366, 48],
+    // Left curve back north through sectors 11-12
+    [356, 24],    [346, -4],    [340, -32],
+    // To sector 13 (far right)
+    [348, -54],   [390, -56],   [425, -48],
+    // Sector 14: curving south
+    [442, -28],   [445, 8],     [442, 52],
+    [436, 102],   [428, 142],
+    // Return to bottom straight
+    [415, 170],   [398, 188],
   ],
 
   sectionWidths: {
-    1: 12, 2: 11, 3: 11, 4: 10, 5: 10, 6: 10,
-    7: 9, 8: 9, 9: 11, 10: 10, 11: 10, 12: 12,
+    1: 13, 2: 11, 3: 10, 4: 10, 5: 9, 6: 9, 7: 9,
+    8: 10, 9: 12, 10: 11, 11: 10, 12: 10, 13: 10, 14: 11,
   },
 
   sectionMap: [
-    12, 12, 12,
+    1,
     1, 1, 1,
     2, 2, 2,
-    3, 3,
-    4, 4, 4, 4, 4,
-    5, 5, 5, 5, 5,
-    6, 6, 6,
-    7, 7, 7,
+    3, 3, 3,
+    3, 4, 4,
+    4, 4, 4,
+    5, 5, 5,
+    6, 6, 7,
+    7,
     8, 8,
-    9, 9,
+    9, 9, 9, 9,
+    10, 10,
+    10, 10, 10,
+    11, 11, 12,
+    12, 13, 13,
+    14, 14, 14, 14, 14,
+    1, 1,
   ],
 
-  drsZone: { start: [60, 225], end: [195, 115] },
+  drsZone: { start: [280, 190], end: [60, 190] },
 
   theme: {
     environment: 'jungle',
