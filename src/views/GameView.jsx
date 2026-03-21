@@ -697,10 +697,14 @@ export function GameView() {
               <div className="lap-times-overlay">
                 {lapTimes.map((lapTime, idx) => {
                   const isFastest = lapTime != null && fastestLapTime != null && lapTime === fastestLapTime;
+                  const isActiveLap = currentLap === idx + 1;
+                  const hasLapTime = lapTime != null;
                   return (
                     <div key={idx} className="lap-time-row">
-                      <span className="lap-time-index">{idx + 1}</span>
-                      <span className="lap-time-value">{lapTime == null ? 'NO TIME' : formatTime(lapTime)}</span>
+                      <span className={`lap-time-index${isActiveLap ? ' is-active' : ' is-inactive'}`}>{idx + 1}</span>
+                      <span className={`lap-time-value${hasLapTime ? ' has-time' : ' no-time'}`}>
+                        {hasLapTime ? formatTime(lapTime) : 'NO TIME'}
+                      </span>
                       <span className={`lap-fastest-badge${isFastest ? ' visible' : ''}`} aria-hidden={!isFastest}>
                         &#9201;
                       </span>

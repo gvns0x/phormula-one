@@ -409,34 +409,40 @@
 }
 
 .btn-racing-line {
+  font-family: var(--font);
   padding: 0.4rem 0.75rem;
   font-size: 0.8rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  background: rgba(0, 0, 0, 0.45);
-  color: rgba(255, 255, 255, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  border-radius: 4px;
+  background: var(--bg-glass);
+  color: rgba(255, 255, 255, 1);
+  border: var(--border-glass);
+  border-radius: var(--radius);
   cursor: pointer;
   transition: background 0.2s, border-color 0.2s;
 }
 
+.btn-racing-line:hover {
+  background: var(--bg-glass-hover);
+  border: var(--border-glass-hover);
+  transition: var(--bg-glass-hover-transition);
+}
+
+.btn-racing-line:active {
+  transform: var(--click-scale);
+}
+
 .btn-racing-line.active {
   background: rgba(0, 255, 170, 0.25);
-  border-color: rgba(0, 255, 170, 0.6);
+  border-color: rgba(0, 255, 170, 0.15);
   color: #00ffaa;
 }
 
-@media (max-width: 768px) {
-  .btn-racing-line:hover {
-    background: rgba(255, 255, 255, 0.15);
-  }
 
   .btn-racing-line.active:hover {
     background: rgba(0, 255, 170, 0.35);
   }
-}
 
 /* Speed / Gear / RPM */
 
@@ -499,16 +505,13 @@
 
 .timing-hud {
   position: absolute;
-  top: 4.5rem;
+  top: 6.5rem;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0.4rem;
-  padding: 0.75rem 1.25rem;
-  background: rgba(0, 0, 0, 0.45);
-  border-radius: 8px;
   pointer-events: none;
 }
 
@@ -519,9 +522,8 @@
 .timer {
   font-family: 'JetBrains Mono', 'SF Mono', 'Consolas', monospace;
   font-size: 2.5rem;
-  font-weight: 800;
+  font-weight: 600;
   color: #fff;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
   letter-spacing: 0.12em;
   font-variant-numeric: tabular-nums;
   transition: color 0.3s ease;
@@ -600,11 +602,11 @@
   top: 4.5rem;
   left: 1.5rem;
   font-family: 'JetBrains Mono', 'SF Mono', 'Consolas', monospace;
-  font-size: 1.1rem;
+  font-size: 0.9rem;
   font-weight: 700;
   color: white;
-  background: rgba(0, 0, 0, 0.5);
-  padding: 0.35rem 0.9rem;
+  background: var(--bg-glass);
+  padding: 0.4rem 0.75rem;
   border-radius: var(--radius);
   letter-spacing: 0.1em;
   pointer-events: none;
@@ -614,7 +616,7 @@
   position: absolute;
   top: 7.2rem;
   left: 1.5rem;
-  padding: 0.45rem 0;
+  padding: 0.45rem;
   background: var(--bg-glass);
   border: var(--border-glass);
   backdrop-filter: var(--glass-blur);
@@ -629,11 +631,11 @@
   align-items: center;
   min-width: 100px;
   gap: 0.55rem;
-  padding: 0.4rem 0.75rem;
+  padding: 0.6rem 0.75rem;
   font-family: 'JetBrains Mono', 'SF Mono', 'Consolas', monospace;
   font-size: 0.8rem;
   font-variant-numeric: tabular-nums;
-  color: rgba(255, 255, 255, 0.88);
+  color: rgba(255, 255, 255, 1);
 }
 
 .lap-time-row:last-child {
@@ -641,13 +643,27 @@
 }
 
 .lap-time-index {
-  min-width: 1rem;
-  font-weight: 700;
-  color: rgba(255, 255, 255, 0.4);
+  font-family: 'Audiowide', cursive;
+  width: 1rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 1);
+}
+
+.lap-time-index.is-active {
+  opacity: 1;
+}
+
+.lap-time-index.is-inactive {
+  opacity: 0.44;
 }
 
 .lap-time-value {
   flex: 1;
+  opacity: 1;
+}
+
+.lap-time-value.no-time {
+  opacity: 0.44;
 }
 
 .lap-fastest-badge {
