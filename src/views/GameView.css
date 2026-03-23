@@ -597,26 +597,11 @@
 
 /* Lap Counter */
 
-.lap-counter {
-  position: absolute;
-  top: 4.5rem;
-  left: 1.5rem;
-  font-family: 'JetBrains Mono', 'SF Mono', 'Consolas', monospace;
-  font-size: 0.9rem;
-  font-weight: 700;
-  color: white;
-  background: var(--bg-glass);
-  padding: 0.4rem 0.75rem;
-  border-radius: var(--radius);
-  letter-spacing: 0.1em;
-  pointer-events: none;
-}
-
 .lap-times-overlay {
   position: absolute;
   top: 7.2rem;
   left: 1.5rem;
-  padding: 0.45rem;
+  padding: 1rem;
   background: var(--bg-glass);
   border: var(--border-glass);
   backdrop-filter: var(--glass-blur);
@@ -626,12 +611,23 @@
   z-index: 10;
 }
 
+.lap-counter {
+  font-family: 'Audiowide', cursive;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: white;
+  border-radius: var(--radius);
+  letter-spacing: 0.1em;
+  pointer-events: none;
+  margin-bottom: 1rem;
+}
+
 .lap-time-row {
   display: flex;
   align-items: center;
   min-width: 100px;
   gap: 0.55rem;
-  padding: 0.6rem 0.75rem;
+  padding: 0.6rem 0;
   font-family: 'JetBrains Mono', 'SF Mono', 'Consolas', monospace;
   font-size: 0.8rem;
   font-variant-numeric: tabular-nums;
@@ -640,12 +636,13 @@
 
 .lap-time-row:last-child {
   border-bottom: none;
+  padding-bottom: 0;
 }
 
 .lap-time-index {
   font-family: 'Audiowide', cursive;
   width: 1rem;
-  font-weight: 500;
+  font-weight: 400;
   color: rgba(255, 255, 255, 1);
 }
 
@@ -668,18 +665,20 @@
 
 .lap-fastest-badge {
   position: absolute;
-  right: -20.5px;
-  width: 20px;
+  right: -64.5px;
+  padding: 0 .4rem;
   height: 20px;
+  font-weight: 500;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border-radius: 0px var(--radius) var(--radius) 0px;
-  font-size: 0.75rem;
+  font-size: 0.6rem;
   line-height: 1;
   color: #fff;
   background: #7e3cff;
   opacity: 0;
+  font-family: 'Audiowide', cursive;
 }
 
 .lap-fastest-badge.visible {

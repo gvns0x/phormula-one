@@ -693,8 +693,8 @@ export function GameView() {
 
           {!isRivalMode && currentLap > 0 && raceState !== 'idle' && (
             <>
-              <div className="lap-counter">LAP {playerMaxLap}/{TOTAL_LAPS}</div>
               <div className="lap-times-overlay">
+              <div className="lap-counter">LAP {playerMaxLap}/{TOTAL_LAPS}</div>
                 {lapTimes.map((lapTime, idx) => {
                   const isFastest = lapTime != null && fastestLapTime != null && lapTime === fastestLapTime;
                   const isActiveLap = currentLap === idx + 1;
@@ -706,7 +706,7 @@ export function GameView() {
                         {hasLapTime ? formatTime(lapTime) : 'NO TIME'}
                       </span>
                       <span className={`lap-fastest-badge${isFastest ? ' visible' : ''}`} aria-hidden={!isFastest}>
-                        &#9201;
+                        FASTEST
                       </span>
                     </div>
                   );
