@@ -309,10 +309,11 @@
   top: 0;
   left: 0;
   right: 0;
+  bottom: 0;
   padding: 1rem 1.5rem;
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   pointer-events: none;
 }
 
@@ -321,9 +322,11 @@
 }
 
 .room-section {
+  position: absolute;
+  left: 1.5rem;
+  bottom: 1rem;
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
+  align-items: flex-end;
 }
 
 .race-menu {
@@ -331,36 +334,75 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 0.5rem;
+  width: 118px;
+  max-height: 48px;
+  padding: 0.3rem;
+  overflow: hidden;
+  border: var(--border-glass);
+  border-radius: 10px;
+  background: var(--bg-glass);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.22);
+  transition: width 0.34s cubic-bezier(0.2, 0.9, 0.2, 1), max-height 0.34s cubic-bezier(0.2, 0.9, 0.2, 1), padding 0.34s cubic-bezier(0.2, 0.9, 0.2, 1), border-radius 0.34s ease, background 0.24s ease, box-shadow 0.24s ease, border-color 0.24s ease;
+}
+
+.race-menu.open {
+  width: 236px;
+  max-height: 300px;
+  padding: 0.45rem;
+  border-radius: 12px;
+  background: rgba(9, 14, 26, 0.9);
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.35);
 }
 
 .race-menu-toggle {
-  min-width: 110px;
+  width: 100%;
+  padding: 0.5rem 0.7rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  font-family: var(--font-slow);
+  font-size: 0.86rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease, transform 0.1s ease;
 }
 
 .race-menu-panel {
-  width: 210px;
+  width: 100%;
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
-  padding: 0.55rem;
-  background: rgba(9, 14, 26, 0.88);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.32);
+  margin-top: 0.38rem;
+  padding: 0 0.1rem 0.1rem;
   opacity: 0;
-  transform: translateY(-6px);
+  transform: translateY(-8px);
   pointer-events: none;
-  max-height: 0;
+  max-height: 220px;
   overflow: hidden;
-  transition: opacity 0.18s ease, transform 0.18s ease, max-height 0.18s ease, padding 0.18s ease;
+  transition: opacity 0.24s ease, transform 0.24s ease, margin-top 0.24s ease;
 }
 
 .race-menu.open .race-menu-panel {
   opacity: 1;
   transform: translateY(0);
   pointer-events: auto;
-  max-height: 280px;
+}
+
+.race-menu-panel > * {
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.race-menu.open .race-menu-panel > * {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .race-menu-action {
@@ -383,39 +425,19 @@
     background: rgba(255, 255, 255, 0.12);
     border-color: rgba(255, 255, 255, 0.28);
   }
+
+  .race-menu-toggle:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.26);
+  }
 }
 
 .race-menu-action:active {
   transform: scale(.99);
 }
 
-.btn-menu {
-  padding: 0.5rem 1rem;
-  font-family: var(--font-slow);
-  font-size: 0.9rem;
-  font-weight: 500;
-  background: var(--bg-glass);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  color: white;
-  border-radius: var(--radius);
-  cursor: pointer;
-  transition: var(--bg-glass-hover-transition);
-  border: var(--border-glass);
-  text-transform: uppercase;
-}
-
-
-@media (min-width: 768px) {
-  .btn-menu:hover {
-    background: var(--bg-glass-hover);
-    border: var(--border-glass-hover);
-    transition: var(--bg-glass-hover-transition);
-  }
-
-  .btn-menu:active {
-    transform: scale(.99);
-  }
+.race-menu-toggle:active {
+  transform: scale(.99);
 }
 
 .room-info {
@@ -737,17 +759,19 @@
   flex: 1;
   opacity: 1;
   font-family: var(--font-number);
+  font-weight: 600;
 }
 
 .lap-time-value.no-time {
   opacity: 0.44;
+  font-weight: 500;
 }
 
 .lap-fastest-badge {
   position: absolute;
-  right: -64.5px;
-  padding: 0 .4rem;
-  height: 20px;
+  right: -68px;
+  padding: 0 .6rem 0 0.4rem;
+  height: 22px;
   font-weight: 500;
   display: inline-flex;
   align-items: center;
@@ -756,7 +780,9 @@
   font-size: 0.6rem;
   line-height: 1;
   color: #fff;
-  background: #7e3cff;
+  background: rgb(126, 60, 255, .65);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
   opacity: 0;
   font-family: var(--font-fast);
 }

@@ -673,7 +673,7 @@ export function GameView() {
             <div className="room-section">
               <div className={`race-menu${overlayMenuOpen ? ' open' : ''}`}>
                 <button
-                  className="btn-menu race-menu-toggle"
+                  className="race-menu-toggle"
                   type="button"
                   onClick={() => setOverlayMenuOpen((prev) => !prev)}
                   aria-expanded={overlayMenuOpen}
