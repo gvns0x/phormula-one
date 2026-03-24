@@ -45,19 +45,19 @@ export function DevToolsPanel({ onToggleDroneView, onOpenChange }) {
   return (
     <div className="devtools-wrapper">
       <div className="devtools-btn-row">
-        <button
+        {/* <button
           className={`drone-toggle ${droneView ? 'drone-active' : ''}`}
           onClick={handleDroneToggle}
           type="button"
         >
           {droneView ? 'Race View' : 'Drone View'}
-        </button>
+        </button> */}
         <button
           className="devtools-toggle"
           onClick={() => setOpen((v) => { const next = !v; onOpenChange?.(next); return next; })}
           type="button"
         >
-          DevTools
+          Dev Tools
         </button>
       </div>
 

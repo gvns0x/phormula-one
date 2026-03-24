@@ -38,6 +38,8 @@ function formatGap(ms) {
 
 const TOTAL_LAPS = 5;
 const N_TRACK_PTS = 800;
+const LAP_OVERLAY_MAX_TILT_DEG = 8;
+const LAP_OVERLAY_SMOOTHING = 0.15;
 
 export function GameView() {
   const canvasRef = useRef(null);
@@ -72,10 +74,12 @@ export function GameView() {
   const [totalRaceTime, setTotalRaceTime] = useState(null);
   const [damage, setDamage] = useState(0);
   const [carDestroyed, setCarDestroyed] = useState(false);
+  const [lapOverlayTilt, setLapOverlayTilt] = useState(0);
 
   const [selectedTrack, setSelectedTrack] = useState('monaco');
   const selectedTrackRef = useRef('monaco');
   const [menuStep, setMenuStep] = useState('track');
+  const [overlayMenuOpen, setOverlayMenuOpen] = useState(false);
 
   const rivalLapRef = useRef(0);
   const rivalRaceFinishedRef = useRef(false);
@@ -104,6 +108,7 @@ export function GameView() {
   const playerLastCrossTimeRef = useRef(null);
   const rivalLastCrossTimeRef = useRef(null);
   const lastGapRef = useRef(0);
+  const lapOverlayTiltRef = useRef(0);
 
   const inputWasBlockedBeforeMenuRef = useRef(false);
 
@@ -131,6 +136,21 @@ export function GameView() {
       mode: gameMode,
       trackId: selectedTrackRef.current,
       onTick: (s) => {
+        const tiltEligible =
+          gameModeRef.current !== 'rival' &&
+          raceStateRef.current === 'racing' &&
+          !inputBlockedRef.current;
+        const targetTilt = tiltEligible
+          ? Math.max(
+              -LAP_OVERLAY_MAX_TILT_DEG,
+              Math.min(LAP_OVERLAY_MAX_TILT_DEG, (s.steerInput ?? 0) * LAP_OVERLAY_MAX_TILT_DEG)
+            )
+          : 0;
+        let nextTilt = lapOverlayTiltRef.current * (1 - LAP_OVERLAY_SMOOTHING) + targetTilt * LAP_OVERLAY_SMOOTHING;
+        if (Math.abs(nextTilt) < 0.01) nextTilt = 0;
+        lapOverlayTiltRef.current = nextTilt;
+        setLapOverlayTilt(nextTilt);
+
         setSpeed(s.speed);
         setGear(s.gear);
         setRpm(s.rpm);
@@ -456,6 +476,23 @@ export function GameView() {
     toastTimerRef.current = setTimeout(() => setToastMessage(null), 3000);
   }, []);
 
+  const handleOverlayMenuRestart = useCallback(() => {
+    setOverlayMenuOpen(false);
+    setMenuOpen(false);
+    menuOpenRef.current = false;
+    startCountdown();
+  }, [startCountdown]);
+
+  const handleOverlayMenuResume = useCallback(() => {
+    setOverlayMenuOpen(false);
+  }, []);
+
+  useEffect(() => {
+    if (gameMode === null || menuOpen) {
+      setOverlayMenuOpen(false);
+    }
+  }, [gameMode, menuOpen]);
+
   useEffect(() => {
     function onKeyDown(e) {
       if (e.key === 'Escape') {
@@ -634,16 +671,34 @@ export function GameView() {
         <>
           <div className="game-overlay">
             <div className="room-section">
-              {!roomCode ? (
-                <button className="btn-create" onClick={createRoom} type="button">
-                  Connect phone
+              <div className={`race-menu${overlayMenuOpen ? ' open' : ''}`}>
+                <button
+                  className="btn-create race-menu-toggle"
+                  type="button"
+                  onClick={() => setOverlayMenuOpen((prev) => !prev)}
+                  aria-expanded={overlayMenuOpen}
+                >
+                  {overlayMenuOpen ? 'Close' : 'Menu'}
                 </button>
-              ) : (
-                <div className="room-info">
-                  <span className="room-label">Enter this code</span>
-                  <span className="room-code">{roomCode}</span>
+                <div className="race-menu-panel" aria-hidden={!overlayMenuOpen}>
+                  {!roomCode ? (
+                    <button className="race-menu-action" type="button" onClick={createRoom}>
+                      Connect phone
+                    </button>
+                  ) : (
+                    <div className="room-info">
+                      <span className="room-label">Enter this code</span>
+                      <span className="room-code">{roomCode}</span>
+                    </div>
+                  )}
+                  <button className="race-menu-action" type="button" onClick={handleOverlayMenuRestart}>
+                    Restart
+                  </button>
+                  <button className="race-menu-action" type="button" onClick={handleOverlayMenuResume}>
+                    Resume
+                  </button>
                 </div>
-              )}
+              </div>
             </div>
             <div className={`connection-status status-${connectionStatus}`}>
               {connectionStatus === 'disconnected' && 'Waiting for controller'}
@@ -652,7 +707,7 @@ export function GameView() {
               {connectionStatus === 'error' && (errorMessage || 'Error')}
             </div>
             <div className="overlay-right">
-              <button
+              {/* <button
                 className={`btn-racing-line${racingLineVisible ? ' active' : ''}`}
                 type="button"
                 onClick={() => {
@@ -662,7 +717,7 @@ export function GameView() {
                 }}
               >
                 Racing Line
-              </button>
+              </button> */}
               <DevToolsPanel
                 onToggleDroneView={(v) => setDroneViewRef.current?.(v)}
                 onOpenChange={(v) => setCornerLabelsRef.current?.(v)}
@@ -693,7 +748,12 @@ export function GameView() {
 
           {!isRivalMode && currentLap > 0 && raceState !== 'idle' && (
             <>
-              <div className="lap-times-overlay">
+              <div
+                className="lap-times-overlay"
+                style={{
+                  transform: `perspective(1000px) rotateY(${lapOverlayTilt.toFixed(1)}deg) rotateZ(${(lapOverlayTilt * 0.1).toFixed(1)}deg)`,
+                }}
+              >
               <div className="lap-counter">LAP {playerMaxLap}/{TOTAL_LAPS}</div>
                 {lapTimes.map((lapTime, idx) => {
                   const isFastest = lapTime != null && fastestLapTime != null && lapTime === fastestLapTime;

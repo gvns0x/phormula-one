@@ -299,6 +299,7 @@ export function createGameEngine(canvasRef, getInput, options) {
   let rafId = null;
   let acc = 0;
   let droneView = false;
+  let lastSteerInput = 0;
 
   const trackCenter = trackConfig.centerline.reduce(
     (a, [x, z]) => ({ x: a.x + x / trackConfig.centerline.length, z: a.z + z / trackConfig.centerline.length }),
@@ -331,6 +332,7 @@ export function createGameEngine(canvasRef, getInput, options) {
     let offTrack = false;
     while (acc >= FIXED_DT && acc > 0) {
       const input = getInput ? getInput() : { steer: 0, throttle: 0, brake: 0 };
+      lastSteerInput = input.steer ?? 0;
       if (drsActive && (input.brake ?? 0) > 0) drsActive = false;
       applyInput(input.steer ?? 0, input.throttle ?? 0, input.brake ?? 0, FIXED_DT, input.reverse ?? 0, drsActive ? 0.10 : 0);
       if (rival) advanceRival(FIXED_DT);
@@ -401,7 +403,7 @@ export function createGameEngine(canvasRef, getInput, options) {
     const ghostPos = (ghostGroup.visible && ghostData && ghostData.length > 0)
       ? { x: ghostGroup.position.x, z: ghostGroup.position.z }
       : null;
-    options?.onTick?.({ speed, gear, rpm, crossed, offTrack, carPos, carQuat, inDrsZone, drsActive, damage, carWrecked, ghostPos, trackIdx, rivalCrossed, rivalTrackIdx, rivalSpeed, rivalPos });
+    options?.onTick?.({ speed, gear, rpm, crossed, offTrack, carPos, carQuat, inDrsZone, drsActive, damage, carWrecked, ghostPos, trackIdx, rivalCrossed, rivalTrackIdx, rivalSpeed, rivalPos, steerInput: lastSteerInput });
     if (!droneView) {
       const speedRatio = Math.min(Math.abs(speed) / tuning.maxSpeed, 1);
       chaseCam.update(carGroup, speedRatio);
