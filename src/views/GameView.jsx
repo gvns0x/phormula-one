@@ -53,9 +53,9 @@ export function GameView() {
   const [rpm, setRpm] = useState(0);
   const { createRoom, getInput, sendState, roomCode, connectionStatus, errorMessage, onRestartRef } = useControllerSync();
 
-  const [gameMode, setGameMode] = useState(null);
+  const [gameMode, setGameMode] = useState('timeTrial');
   const gameModeRef = useRef(null);
-  const [menuOpen, setMenuOpen] = useState(true);
+  const [menuOpen, setMenuOpen] = useState(false);
   const menuOpenRef = useRef(true);
   const [raceState, setRaceState] = useState('idle');
   const [lightsState, setLightsState] = useState(0);
@@ -79,7 +79,8 @@ export function GameView() {
   const [selectedTrack, setSelectedTrack] = useState('monaco');
   const selectedTrackRef = useRef('monaco');
   const [menuStep, setMenuStep] = useState('track');
-  const [overlayMenuOpen, setOverlayMenuOpen] = useState(false);
+  const [overlayMenuOpen, setOverlayMenuOpen] = useState(true);
+  const [raceHudVisible, setRaceHudVisible] = useState(false);
 
   const rivalLapRef = useRef(0);
   const rivalRaceFinishedRef = useRef(false);
@@ -343,6 +344,7 @@ export function GameView() {
     }
 
     currentLapRef.current = 1;
+    setRaceHudVisible(true);
     setCurrentLap(1);
     setLapTimes(Array(TOTAL_LAPS).fill(null));
     setTotalRaceTime(null);
@@ -399,6 +401,7 @@ export function GameView() {
   const selectMode = useCallback((mode) => {
     setGameMode(mode);
     gameModeRef.current = mode;
+    setRaceHudVisible(false);
     setRaceState('idle');
     raceStateRef.current = 'idle';
     setMenuOpen(false);
@@ -414,6 +417,7 @@ export function GameView() {
     setSpeed(0);
     setGear(1);
     setRpm(0);
+    setRaceHudVisible(false);
     setElapsed(0);
     setLastLap(null);
     setBestLap(null);
@@ -463,13 +467,6 @@ export function GameView() {
     onRestartRef.current = startCountdown;
   }, [startCountdown, onRestartRef]);
 
-  useEffect(() => {
-    if (gameMode !== null && engineRef.current) {
-      const timer = setTimeout(() => startCountdown(), 100);
-      return () => clearTimeout(timer);
-    }
-  }, [gameMode, startCountdown]);
-
   const showToast = useCallback((msg) => {
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     setToastMessage(msg);
@@ -487,6 +484,12 @@ export function GameView() {
     setOverlayMenuOpen(false);
   }, []);
 
+  const handleStartLapRace = useCallback(() => {
+    playClickSound();
+    setOverlayMenuOpen(false);
+    startCountdown();
+  }, [startCountdown]);
+
   useEffect(() => {
     if (gameMode === null || menuOpen) {
       setOverlayMenuOpen(false);
@@ -497,23 +500,15 @@ export function GameView() {
     function onKeyDown(e) {
       if (e.key === 'Escape') {
         e.preventDefault();
-        if (menuOpenRef.current && gameModeRef.current !== null) {
+        if (gameModeRef.current !== null) {
           playClickSound();
-          closeMenu();
-        } else if (!menuOpenRef.current && gameModeRef.current !== null) {
-          playClickSound();
-          openMenu();
+          setOverlayMenuOpen((prev) => !prev);
         }
         return;
       }
       if (e.key === ' ') {
         e.preventDefault();
-        if (menuOpenRef.current && gameModeRef.current !== null) {
-          playClickSound();
-          setMenuOpen(false);
-          menuOpenRef.current = false;
-          startCountdown();
-        } else if (!menuOpenRef.current && gameModeRef.current !== null) {
+        if (gameModeRef.current !== null) {
           playClickSound();
           startCountdown();
         }
@@ -535,7 +530,7 @@ export function GameView() {
     }
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [startCountdown, openMenu, closeMenu, showToast]);
+  }, [startCountdown, showToast]);
 
   useEffect(() => {
     function isInCenter(clientX, clientY) {
@@ -585,6 +580,7 @@ export function GameView() {
   }, null);
 
   const hasActiveGame = gameMode !== null;
+  const showRaceHud = raceHudVisible && gameMode !== null;
 
   return (
     <div className="game-view">
@@ -689,14 +685,22 @@ export function GameView() {
                     <div className="room-info">
                       <span className="room-label">Enter this code</span>
                       <span className="room-code">{roomCode}</span>
+                      <div className="room-qr-placeholder">QR code placeholder</div>
                     </div>
                   )}
-                  <button className="race-menu-action" type="button" onClick={handleOverlayMenuRestart}>
-                    Restart
+                  <button className="race-menu-action race-menu-start" type="button" onClick={handleStartLapRace}>
+                    Start Lap Race
                   </button>
-                  <button className="race-menu-action" type="button" onClick={handleOverlayMenuResume}>
-                    Resume
-                  </button>
+                  {raceHudVisible && (
+                    <>
+                      <button className="race-menu-action" type="button" onClick={handleOverlayMenuRestart}>
+                        Restart
+                      </button>
+                      <button className="race-menu-action" type="button" onClick={handleOverlayMenuResume}>
+                        Resume
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
@@ -725,60 +729,64 @@ export function GameView() {
             </div>
           </div>
 
-          <div className="timing-hud">
-            <div className="timer">{formatTime(elapsed)}</div>
-            {bestLap != null && (
-              <div className="best-lap">
-                <span className="lap-label">FASTEST</span>
-                <span className="lap-time">{formatTime(bestLap)}</span>
-              </div>
-            )}
-            {lastLap != null && (
-              <div className="last-lap">
-                <span className="lap-label">Last</span>
-                <span className="lap-time">{formatTime(lastLap)}</span>
-                {delta && (
-                  <span className={`lap-delta ${delta.isFaster ? 'faster' : 'slower'}`}>
-                    {delta.text}
-                  </span>
-                )}
-              </div>
-            )}
-          </div>
+          {showRaceHud && (
+            <div className="timing-hud">
+              <div className="timer">{formatTime(elapsed)}</div>
+              {bestLap != null && (
+                <div className="best-lap">
+                  <span className="lap-label">FASTEST</span>
+                  <span className="lap-time">{formatTime(bestLap)}</span>
+                </div>
+              )}
+              {lastLap != null && (
+                <div className="last-lap">
+                  <span className="lap-label">Last</span>
+                  <span className="lap-time">{formatTime(lastLap)}</span>
+                  {delta && (
+                    <span className={`lap-delta ${delta.isFaster ? 'faster' : 'slower'}`}>
+                      {delta.text}
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
-          {!isRivalMode && currentLap > 0 && raceState !== 'idle' && (
+          {!isRivalMode && showRaceHud && currentLap > 0 && raceState !== 'idle' && (
             <>
-              <div
-                className="lap-times-overlay"
-                style={{
-                  transform: `perspective(1000px) rotateY(${lapOverlayTilt.toFixed(1)}deg) rotateZ(${(lapOverlayTilt * 0.1).toFixed(1)}deg)`,
-                }}
-              >
-              <div className="lap-counter">
-                <span className="lap-counter-current">LAP {playerMaxLap}</span>
-                <span className="lap-counter-total">/{TOTAL_LAPS}</span>
-              </div>
-                {lapTimes.map((lapTime, idx) => {
-                  const isFastest = lapTime != null && fastestLapTime != null && lapTime === fastestLapTime;
-                  const isActiveLap = currentLap === idx + 1;
-                  const hasLapTime = lapTime != null;
-                  return (
-                    <div key={idx} className="lap-time-row">
-                      <span className={`lap-time-index${isActiveLap ? ' is-active' : ' is-inactive'}`}>{idx + 1}</span>
-                      <span className={`lap-time-value${hasLapTime ? ' has-time' : ' no-time'}`}>
-                        {hasLapTime ? formatTime(lapTime) : 'NO TIME'}
-                      </span>
-                      <span className={`lap-fastest-badge${isFastest ? ' visible' : ''}`} aria-hidden={!isFastest}>
-                        FASTEST
-                      </span>
-                    </div>
-                  );
-                })}
+              <div className="lap-times-overlay-visible">
+                <div
+                  className="lap-times-overlay"
+                  style={{
+                    transform: `perspective(1000px) rotateY(${lapOverlayTilt.toFixed(1)}deg) rotateZ(${(lapOverlayTilt * 0.1).toFixed(1)}deg)`,
+                  }}
+                >
+                <div className="lap-counter">
+                  <span className="lap-counter-current">LAP {playerMaxLap}</span>
+                  <span className="lap-counter-total">/{TOTAL_LAPS}</span>
+                </div>
+                  {lapTimes.map((lapTime, idx) => {
+                    const isFastest = lapTime != null && fastestLapTime != null && lapTime === fastestLapTime;
+                    const isActiveLap = currentLap === idx + 1;
+                    const hasLapTime = lapTime != null;
+                    return (
+                      <div key={idx} className="lap-time-row">
+                        <span className={`lap-time-index${isActiveLap ? ' is-active' : ' is-inactive'}`}>{idx + 1}</span>
+                        <span className={`lap-time-value${hasLapTime ? ' has-time' : ' no-time'}`}>
+                          {hasLapTime ? formatTime(lapTime) : 'NO TIME'}
+                        </span>
+                        <span className={`lap-fastest-badge${isFastest ? ' visible' : ''}`} aria-hidden={!isFastest}>
+                          FASTEST
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </>
           )}
 
-          {isRivalMode && raceState !== 'idle' && (
+          {isRivalMode && showRaceHud && raceState !== 'idle' && (
             <div className="leaderboard">
               <div className="leaderboard-header">
                 <span className="leaderboard-title">RACE</span>

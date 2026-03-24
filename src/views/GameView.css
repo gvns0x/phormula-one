@@ -334,26 +334,16 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  width: 118px;
   max-height: 48px;
-  padding: 0.3rem;
-  overflow: hidden;
-  border: var(--border-glass);
-  border-radius: 10px;
   background: var(--bg-glass);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.22);
-  transition: width 0.34s cubic-bezier(0.2, 0.9, 0.2, 1), max-height 0.34s cubic-bezier(0.2, 0.9, 0.2, 1), padding 0.34s cubic-bezier(0.2, 0.9, 0.2, 1), border-radius 0.34s ease, background 0.24s ease, box-shadow 0.24s ease, border-color 0.24s ease;
+  transition: width 0.52s cubic-bezier(0.22, 1, 0.36, 1), max-height 0.52s cubic-bezier(0.22, 1, 0.36, 1), padding 0.52s cubic-bezier(0.22, 1, 0.36, 1), border-radius 0.52s cubic-bezier(0.22, 1, 0.36, 1), background 0.42s ease, box-shadow 0.42s ease, border-color 0.42s ease;
 }
 
 .race-menu.open {
-  width: 236px;
   max-height: 300px;
-  padding: 0.45rem;
-  border-radius: 12px;
-  background: rgba(9, 14, 26, 0.9);
-  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.35);
+  background: transparent;
 }
 
 .race-menu-toggle {
@@ -385,7 +375,7 @@
   pointer-events: none;
   max-height: 220px;
   overflow: hidden;
-  transition: opacity 0.24s ease, transform 0.24s ease, margin-top 0.24s ease;
+  transition: opacity 0.34s ease, transform 0.42s cubic-bezier(0.22, 1, 0.36, 1), margin-top 0.34s ease;
 }
 
 .race-menu.open .race-menu-panel {
@@ -397,7 +387,7 @@
 .race-menu-panel > * {
   opacity: 0;
   transform: translateY(-4px);
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition: opacity 0.32s ease, transform 0.38s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .race-menu.open .race-menu-panel > * {
@@ -420,10 +410,29 @@
   transition: background 0.16s ease, border-color 0.16s ease, transform 0.1s ease;
 }
 
+.race-menu-start {
+  padding: 0.78rem 0.9rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 80, 80, 0.75);
+  background: linear-gradient(180deg, #f93d3d 0%, #bf1111 100%);
+  color: #fff;
+  font-family: var(--font-slow);
+  font-size: 0.98rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  box-shadow: 0 8px 18px rgba(191, 17, 17, 0.35);
+}
+
 @media (max-width: 768px) {
   .race-menu-action:hover {
     background: rgba(255, 255, 255, 0.12);
     border-color: rgba(255, 255, 255, 0.28);
+  }
+
+  .race-menu-start:hover {
+    border-color: rgba(255, 130, 130, 0.95);
+    background: linear-gradient(180deg, #ff5656 0%, #ca1717 100%);
   }
 
   .race-menu-toggle:hover {
@@ -461,6 +470,22 @@
   letter-spacing: 0.2em;
   color: white;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.room-qr-placeholder {
+  margin-top: 0.4rem;
+  width: 100%;
+  min-height: 84px;
+  border-radius: 8px;
+  border: 1px dashed rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.73rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
 
 .connection-status {
@@ -704,6 +729,10 @@
   transition: transform 0.08s linear;
 }
 
+.lap-times-overlay-visible {
+  animation: lap-overlay-enter 0.95s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 .lap-counter {
   font-family: 'Audiowide', cursive;
   font-size: 0.9rem;
@@ -877,6 +906,17 @@
 @keyframes hint-pulse {
   0%, 100% { opacity: 0.6; }
   50% { opacity: 1; }
+}
+
+@keyframes lap-overlay-enter {
+  0% {
+    opacity: 0;
+    transform: translateX(-38px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 /* DRS Banner */

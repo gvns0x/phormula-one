@@ -70,7 +70,7 @@ export const monacoTrack = {
     fogFar: 900,
     ground: 'grass',
     ambientIntensity: .45,
-    sunIntensity: 1.4,
+    sunIntensity: 2.4,
     sunPosition: [200, 300, -50],
   },
 };

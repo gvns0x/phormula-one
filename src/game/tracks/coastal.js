@@ -58,8 +58,8 @@ export const coastalTrack = {
     fogNear: 200,
     fogFar: 800,
     ground: 'coastal',
-    ambientIntensity: 0.35,
-    sunIntensity: 1.2,
+    ambientIntensity: 10,
+    sunIntensity: 1.5,
     sunPosition: [150, 350, -100],
   },
 };
