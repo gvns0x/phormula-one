@@ -529,7 +529,7 @@ export function GameView() {
         engineRef.current?.setGhostVisible(ghostVisibleRef.current);
         showToast(ghostVisibleRef.current ? 'Ghost car ON' : 'Ghost car OFF');
       }
-      if (e.key === 'o' || e.key === 'O') {
+      if (e.key === 'x' || e.key === 'X') {
         if (!menuOpenRef.current) engineRef.current?.activateDrs();
       }
     }
@@ -673,7 +673,7 @@ export function GameView() {
             <div className="room-section">
               <div className={`race-menu${overlayMenuOpen ? ' open' : ''}`}>
                 <button
-                  className="btn-create race-menu-toggle"
+                  className="btn-menu race-menu-toggle"
                   type="button"
                   onClick={() => setOverlayMenuOpen((prev) => !prev)}
                   aria-expanded={overlayMenuOpen}
@@ -729,7 +729,7 @@ export function GameView() {
             <div className="timer">{formatTime(elapsed)}</div>
             {bestLap != null && (
               <div className="best-lap">
-                <span className="lap-label">Best</span>
+                <span className="lap-label">FASTEST</span>
                 <span className="lap-time">{formatTime(bestLap)}</span>
               </div>
             )}
@@ -832,7 +832,7 @@ export function GameView() {
 
           <div className="speed-display">
             <div className={`drs-banner${inDrsZone ? ' drs-visible' : ''}${drsActive ? ' drs-active' : ''}`}>
-              {drsActive ? 'DRS ACTIVE' : 'DRS ZONE (press O)'}
+              {drsActive ? 'DRS ACTIVE' : 'DRS ZONE (press X)'}
             </div>
             <span className="speed-gear">{gear === 'R' ? 'R' : `G${gear}`}</span>
             <div className="speed-main">

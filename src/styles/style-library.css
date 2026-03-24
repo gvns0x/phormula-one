@@ -1,5 +1,6 @@
 :root {
-  --font: "Outfit", sans-serif;
+  --font-slow: "Outfit", sans-serif;
+  --font-fast: "Audiowide", sans-serif;
 
   /* Glass – Background */
   

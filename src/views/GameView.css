@@ -370,7 +370,7 @@
   border: 1px solid rgba(255, 255, 255, 0.14);
   background: rgba(255, 255, 255, 0.06);
   color: #fff;
-  font-family: var(--font-outfit);
+  font-family: var(--font-fast);
   font-size: 0.84rem;
   font-weight: 500;
   text-align: left;
@@ -389,9 +389,9 @@
   transform: scale(.99);
 }
 
-.btn-create {
+.btn-menu {
   padding: 0.5rem 1rem;
-  font-family: var(--font-outfit);
+  font-family: var(--font-slow);
   font-size: 0.9rem;
   font-weight: 500;
   background: var(--bg-glass);
@@ -402,17 +402,18 @@
   cursor: pointer;
   transition: var(--bg-glass-hover-transition);
   border: var(--border-glass);
+  text-transform: uppercase;
 }
 
 
 @media (min-width: 768px) {
-  .btn-create:hover {
+  .btn-menu:hover {
     background: var(--bg-glass-hover);
     border: var(--border-glass-hover);
     transition: var(--bg-glass-hover-transition);
   }
 
-  .btn-create:active {
+  .btn-menu:active {
     transform: scale(.99);
   }
 }
@@ -474,7 +475,7 @@
 }
 
 .btn-racing-line {
-  font-family: var(--font);
+  font-family: var(--font-slow);
   padding: 0.4rem 0.75rem;
   font-size: 0.8rem;
   font-weight: 600;
@@ -607,6 +608,7 @@
 }
 
 .lap-label {
+  font-family: var(--font-slow);
   font-size: 0.8rem;
   text-transform: uppercase;
   letter-spacing: 0.1em;
@@ -747,7 +749,7 @@
   color: #fff;
   background: #7e3cff;
   opacity: 0;
-  font-family: 'Audiowide', cursive;
+  font-family: var(--font-fast);
 }
 
 .lap-fastest-badge.visible {
