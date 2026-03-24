@@ -398,7 +398,7 @@
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
   color: white;
-  border-radius: 6px;
+  border-radius: var(--radius);
   cursor: pointer;
   transition: var(--bg-glass-hover-transition);
   border: var(--border-glass);
@@ -668,8 +668,8 @@
   position: absolute;
   top: 7.2rem;
   left: 1.5rem;
+  background-color: var(--bg-glass);
   padding: 1rem;
-  background: var(--bg-glass);
   border: var(--border-glass);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
@@ -691,6 +691,14 @@
   letter-spacing: 0.1em;
   pointer-events: none;
   margin-bottom: 1rem;
+}
+
+.lap-counter-current {
+  opacity: 1;
+}
+
+.lap-counter-total {
+  opacity: 0.44;
 }
 
 .lap-time-row {
@@ -728,6 +736,7 @@
 .lap-time-value {
   flex: 1;
   opacity: 1;
+  font-family: var(--font-number);
 }
 
 .lap-time-value.no-time {

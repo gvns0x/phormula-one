@@ -1,15 +1,16 @@
 :root {
   --font-slow: "Outfit", sans-serif;
   --font-fast: "Audiowide", sans-serif;
+  --font-number: "JetBrains Mono", "SF Mono", "Consolas", monospace;
 
   /* Glass – Background */
   
-  --bg-glass: rgba(255,255,255,.15);
-  --bg-glass-hover: rgba(255,255,255,.20);
+  --bg-glass: rgba(255,255,255,.06);
+  --bg-glass-hover: rgba(255,255,255,.07);
   --bg-glass-hover-transition: background .2s ease-out;
   
   /* Glass – Border */
-  --border-glass: 1px solid rgba(255,255,255,.1);
+  --border-glass: 1px solid rgba(255,255,255,.06);
   --border-glass-hover: 1px solid rgba(255,255,255,.1);
 
   /* Glass – Blur */

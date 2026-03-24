@@ -754,7 +754,10 @@ export function GameView() {
                   transform: `perspective(1000px) rotateY(${lapOverlayTilt.toFixed(1)}deg) rotateZ(${(lapOverlayTilt * 0.1).toFixed(1)}deg)`,
                 }}
               >
-              <div className="lap-counter">LAP {playerMaxLap}/{TOTAL_LAPS}</div>
+              <div className="lap-counter">
+                <span className="lap-counter-current">LAP {playerMaxLap}</span>
+                <span className="lap-counter-total">/{TOTAL_LAPS}</span>
+              </div>
                 {lapTimes.map((lapTime, idx) => {
                   const isFastest = lapTime != null && fastestLapTime != null && lapTime === fastestLapTime;
                   const isActiveLap = currentLap === idx + 1;
