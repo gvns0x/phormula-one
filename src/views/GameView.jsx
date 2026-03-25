@@ -141,7 +141,6 @@ export function GameView() {
       onTick: (s) => {
         const tiltEligible =
           gameModeRef.current !== 'rival' &&
-          raceStateRef.current === 'racing' &&
           !inputBlockedRef.current;
         const targetTilt = tiltEligible
           ? Math.max(
@@ -861,6 +860,9 @@ export function GameView() {
               onClick={handleStartLapRace}
               onMouseMove={handleStartRaceCenterMouseMove}
               onMouseLeave={handleStartRaceCenterMouseLeave}
+              style={{
+                transform: `perspective(1000px) translateX(-50%) translateY(${startRaceCtaExiting ? '-10px' : '0px'}) scale(${startRaceCtaExiting ? '0.96' : '1'}) rotateY(${lapOverlayTilt.toFixed(1)}deg) rotateZ(${(lapOverlayTilt * 0.1).toFixed(1)}deg)`,
+              }}
               aria-label="Start Lap Race"
             >
               <span className="start-race-center-label">Start Lap Race</span>

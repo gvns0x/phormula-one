@@ -905,7 +905,6 @@
   position: absolute;
   top: 18%;
   left: 50%;
-  transform: translateX(-50%);
   z-index: 14;
   min-width: 260px;
   padding: 0.9rem 1.25rem;
@@ -965,7 +964,6 @@
 
 .start-race-center.exiting {
   opacity: 0;
-  transform: translateX(-50%) translateY(-10px) scale(0.96);
   pointer-events: none;
 }
 
