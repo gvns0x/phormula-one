@@ -81,6 +81,7 @@ export function GameView() {
   const [menuStep, setMenuStep] = useState('track');
   const [overlayMenuOpen, setOverlayMenuOpen] = useState(true);
   const [raceHudVisible, setRaceHudVisible] = useState(false);
+  const [startRaceCtaExiting, setStartRaceCtaExiting] = useState(false);
 
   const rivalLapRef = useRef(0);
   const rivalRaceFinishedRef = useRef(false);
@@ -101,6 +102,7 @@ export function GameView() {
   const ghostDataRef = useRef(null);
   const ghostVisibleRef = useRef(true);
   const toastTimerRef = useRef(null);
+  const startRaceCtaTimerRef = useRef(null);
   const currentLapRef = useRef(0);
   const raceStartTimeRef = useRef(null);
   const rivalLapStartRef = useRef(null);
@@ -486,9 +488,28 @@ export function GameView() {
 
   const handleStartLapRace = useCallback(() => {
     playClickSound();
-    setOverlayMenuOpen(false);
-    startCountdown();
+    setStartRaceCtaExiting(true);
+    if (startRaceCtaTimerRef.current) clearTimeout(startRaceCtaTimerRef.current);
+    startRaceCtaTimerRef.current = setTimeout(() => {
+      setOverlayMenuOpen(false);
+      setStartRaceCtaExiting(false);
+      startCountdown();
+    }, 360);
   }, [startCountdown]);
+
+  const handleStartRaceCenterMouseMove = useCallback((e) => {
+    const el = e.currentTarget;
+    const rect = el.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) * 100) / el.clientWidth;
+    const y = ((e.clientY - rect.top) * 100) / el.clientHeight;
+    el.style.setProperty('--mouse-x', String(x));
+    el.style.setProperty('--mouse-y', String(y));
+  }, []);
+
+  const handleStartRaceCenterMouseLeave = useCallback((e) => {
+    e.currentTarget.style.setProperty('--mouse-x', '50');
+    e.currentTarget.style.setProperty('--mouse-y', '50');
+  }, []);
 
   useEffect(() => {
     if (gameMode === null || menuOpen) {
@@ -561,6 +582,12 @@ export function GameView() {
     document.addEventListener('touchend', onTouchEnd, { passive: false });
     return () => document.removeEventListener('touchend', onTouchEnd);
   }, [startCountdown]);
+
+  useEffect(() => {
+    return () => {
+      if (startRaceCtaTimerRef.current) clearTimeout(startRaceCtaTimerRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     return () => countdownTimersRef.current.forEach(clearTimeout);
@@ -688,9 +715,6 @@ export function GameView() {
                       <div className="room-qr-placeholder">QR code placeholder</div>
                     </div>
                   )}
-                  <button className="race-menu-action race-menu-start" type="button" onClick={handleStartLapRace}>
-                    Start Lap Race
-                  </button>
                   {raceHudVisible && (
                     <>
                       <button className="race-menu-action" type="button" onClick={handleOverlayMenuRestart}>
@@ -828,6 +852,19 @@ export function GameView() {
                 </>
               )}
             </div>
+          )}
+
+          {!raceHudVisible && !lightsVisible && (
+            <button
+              className={`start-race-center${startRaceCtaExiting ? ' exiting' : ''}`}
+              type="button"
+              onClick={handleStartLapRace}
+              onMouseMove={handleStartRaceCenterMouseMove}
+              onMouseLeave={handleStartRaceCenterMouseLeave}
+              aria-label="Start Lap Race"
+            >
+              <span className="start-race-center-label">Start Lap Race</span>
+            </button>
           )}
 
           {lightsVisible && (
