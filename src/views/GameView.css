@@ -710,7 +710,7 @@
 }
 
 .lap-times-overlay-visible {
-  animation: lap-overlay-enter 0.95s cubic-bezier(0.22, 1, 0.36, 1);
+  animation: lap-overlay-enter 1s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .lap-counter {
@@ -833,9 +833,12 @@
   display: flex;
   gap: 1.5rem;
   padding: 1rem 1.5rem;
-  background: rgba(20, 20, 20, 0.85);
+  /* background: rgba(20, 20, 20, 0.85); */
+  background: var(--bg-glass);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
   border-radius: 12px;
-  border: 2px solid rgba(80, 80, 80, 0.5);
+  border: var(--border-glass);
   pointer-events: none;
   transition: opacity 0.8s ease, transform 0.8s ease;
 }
@@ -890,11 +893,9 @@
 
 @keyframes lap-overlay-enter {
   0% {
-    opacity: 0;
     transform: translateX(-38px);
   }
   100% {
-    opacity: 1;
     transform: translateX(0);
   }
 }
