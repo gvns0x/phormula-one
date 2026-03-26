@@ -41,6 +41,7 @@ const N_TRACK_PTS = 800;
 const LAP_OVERLAY_MAX_TILT_DEG = 8;
 const LAP_OVERLAY_SMOOTHING = 0.15;
 const HIT_FLASH_MIN_DAMAGE_DELTA = 0.001;
+const CONTROLLER_CONNECT_URL_PLACEHOLDER = 'https://example.com/controller';
 
 function getDamageFlashColor(damageValue) {
   const d = Math.max(0, Math.min(damageValue ?? 0, 1));
@@ -570,6 +571,11 @@ export function GameView() {
   }, []);
 
   useEffect(() => {
+    if (!overlayMenuOpen || roomCode) return;
+    createRoom();
+  }, [overlayMenuOpen, roomCode, createRoom]);
+
+  useEffect(() => {
     return () => countdownTimersRef.current.forEach(clearTimeout);
   }, []);
 
@@ -603,7 +609,6 @@ export function GameView() {
           <div className="game-overlay">
             <div className="room-section">
               <MenuButton
-                variant="toggle"
                 onClick={() => {
                   setOverlayMenuOpen((prev) => {
                     const next = !prev;
@@ -646,26 +651,59 @@ export function GameView() {
             <div className="race-menu-backdrop" role="dialog" aria-modal="true" aria-label="Race menu">
               <div className="race-menu-modal">
                 <div className="race-menu-panel">
-                  {!roomCode ? (
-                    <MenuButton variant="action" onClick={createRoom}>
-                      Connect phone
-                    </MenuButton>
-                  ) : (
-                    <div className="room-info">
+                  <div className="race-menu-top">
+                    <section className="menu-info-card controls-card" aria-label="Keyboard controls">
+                      <h2 className="menu-card-title">Keyboard Controls</h2>
+                      <ul className="controls-list">
+                        <li className="controls-item">
+                          <span className="controls-key-row">
+                            <kbd className="keycap">Left</kbd>
+                            <kbd className="keycap">Right</kbd>
+                          </span>
+                          <span className="controls-action">Steer</span>
+                        </li>
+                        <li className="controls-item">
+                          <span className="controls-key-row">
+                            <kbd className="keycap">Up</kbd>
+                          </span>
+                          <span className="controls-action">Throttle</span>
+                        </li>
+                        <li className="controls-item">
+                          <span className="controls-key-row">
+                            <kbd className="keycap">Down</kbd>
+                          </span>
+                          <span className="controls-action">Brake / Reverse</span>
+                        </li>
+                        <li className="controls-item">
+                          <span className="controls-key-row">
+                            <kbd className="keycap">X</kbd>
+                          </span>
+                          <span className="controls-action">Activate DRS in DRS zone</span>
+                        </li>
+                      </ul>
+                    </section>
+                    <section className="menu-info-card room-info" aria-label="Phone connection">
+                      <div className="room-header">
+                        <h2 className="menu-card-title">Connect Phone</h2>
+                        <MenuButton className="room-refresh-btn" onClick={createRoom}>
+                          Refresh code
+                        </MenuButton>
+                      </div>
                       <span className="room-label">Enter this code</span>
-                      <span className="room-code">{roomCode}</span>
+                      <span className="room-code">{roomCode || '----'}</span>
+                      <span className="room-link">{CONTROLLER_CONNECT_URL_PLACEHOLDER}</span>
                       <div className="room-qr-placeholder">QR code placeholder</div>
-                    </div>
-                  )}
+                    </section>
+                  </div>
                   {raceHudVisible && (
-                    <>
-                      <MenuButton variant="action" onClick={handleOverlayMenuRestart}>
+                    <div className="race-menu-actions">
+                      <MenuButton className="race-menu-action-btn" onClick={handleOverlayMenuRestart}>
                         Restart
                       </MenuButton>
-                      <MenuButton variant="action" onClick={handleOverlayMenuResume}>
+                      <MenuButton className="race-menu-action-btn" onClick={handleOverlayMenuResume}>
                         Resume
                       </MenuButton>
-                    </>
+                    </div>
                   )}
                 </div>
               </div>
