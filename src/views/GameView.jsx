@@ -6,7 +6,6 @@ import { DevToolsPanel } from '../components/DevToolsPanel';
 import { MiniMap } from '../components/MiniMap';
 import { CarStatus } from '../components/CarStatus';
 import { playClickSound } from '../ui/clickSound';
-import { TRACK_LIST } from '../game/tracks/index';
 import './GameView.css';
 
 function formatTime(ms) {
@@ -40,6 +39,14 @@ const TOTAL_LAPS = 5;
 const N_TRACK_PTS = 800;
 const LAP_OVERLAY_MAX_TILT_DEG = 8;
 const LAP_OVERLAY_SMOOTHING = 0.15;
+const HIT_FLASH_MIN_DAMAGE_DELTA = 0.001;
+
+function getDamageFlashColor(damageValue) {
+  const d = Math.max(0, Math.min(damageValue ?? 0, 1));
+  // Keep hit feedback in warm tones only: orange -> red (no green flash).
+  const hue = 30 * (1 - d);
+  return `hsl(${hue}, 100%, 50%)`;
+}
 
 export function GameView() {
   const canvasRef = useRef(null);
@@ -55,8 +62,6 @@ export function GameView() {
 
   const [gameMode, setGameMode] = useState('timeTrial');
   const gameModeRef = useRef(null);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const menuOpenRef = useRef(true);
   const [raceState, setRaceState] = useState('idle');
   const [lightsState, setLightsState] = useState(0);
   const [lightsVisible, setLightsVisible] = useState(false);
@@ -73,12 +78,11 @@ export function GameView() {
   const [lapTimes, setLapTimes] = useState(() => Array(TOTAL_LAPS).fill(null));
   const [totalRaceTime, setTotalRaceTime] = useState(null);
   const [damage, setDamage] = useState(0);
+  const [damageFlash, setDamageFlash] = useState(null);
   const [carDestroyed, setCarDestroyed] = useState(false);
   const [lapOverlayTilt, setLapOverlayTilt] = useState(0);
 
-  const [selectedTrack, setSelectedTrack] = useState('monaco');
   const selectedTrackRef = useRef('monaco');
-  const [menuStep, setMenuStep] = useState('track');
   const [overlayMenuOpen, setOverlayMenuOpen] = useState(true);
   const [raceHudVisible, setRaceHudVisible] = useState(false);
   const [startRaceCtaExiting, setStartRaceCtaExiting] = useState(false);
@@ -112,8 +116,11 @@ export function GameView() {
   const rivalLastCrossTimeRef = useRef(null);
   const lastGapRef = useRef(0);
   const lapOverlayTiltRef = useRef(0);
+  const lastDamageRef = useRef(0);
 
   const inputWasBlockedBeforeMenuRef = useRef(false);
+  const menuPauseStartedAtRef = useRef(null);
+  const menuPausedRaceRef = useRef(false);
 
   useEffect(() => {
     raceStateRef.current = raceState;
@@ -122,10 +129,6 @@ export function GameView() {
   useEffect(() => {
     gameModeRef.current = gameMode;
   }, [gameMode]);
-
-  useEffect(() => {
-    menuOpenRef.current = menuOpen;
-  }, [menuOpen]);
 
   const wrappedGetInput = useCallback(() => {
     if (inputBlockedRef.current) return { steer: 0, throttle: 0, brake: 0 };
@@ -162,7 +165,17 @@ export function GameView() {
         if (s.rivalPos) setRivalPosition(s.rivalPos);
         setInDrsZone(!!s.inDrsZone);
         setDrsActive(!!s.drsActive);
-        if (s.damage != null) setDamage(s.damage);
+        if (s.damage != null) {
+          const clampedDamage = Math.max(0, Math.min(s.damage, 1));
+          if (clampedDamage - lastDamageRef.current > HIT_FLASH_MIN_DAMAGE_DELTA) {
+            setDamageFlash({
+              key: performance.now(),
+              color: getDamageFlashColor(clampedDamage),
+            });
+          }
+          lastDamageRef.current = clampedDamage;
+          setDamage(clampedDamage);
+        }
 
         if (raceStateRef.current === 'racing' && (s.damage >= 1.0 || s.carWrecked)) {
           setRaceState('finished');
@@ -306,15 +319,21 @@ export function GameView() {
 
   const startCountdown = useCallback(() => {
     if (gameModeRef.current === null) return;
+    setOverlayMenuOpen(false);
     countdownTimersRef.current.forEach(clearTimeout);
     countdownTimersRef.current = [];
 
     const engine = engineRef.current;
     if (!engine) return;
 
+    engine.setPaused(false);
+    menuPauseStartedAtRef.current = null;
+    menuPausedRaceRef.current = false;
     engine.resetCar();
     engine.resetDamage();
     setDamage(0);
+    lastDamageRef.current = 0;
+    setDamageFlash(null);
     setCarDestroyed(false);
     inputBlockedRef.current = true;
 
@@ -381,87 +400,39 @@ export function GameView() {
     countdownTimersRef.current = timers;
   }, []);
 
-  const openMenu = useCallback(() => {
+  const pauseForOverlayMenu = useCallback(() => {
+    if (raceStateRef.current !== 'racing') return;
+    if (menuPauseStartedAtRef.current != null) return;
     inputWasBlockedBeforeMenuRef.current = inputBlockedRef.current;
     inputBlockedRef.current = true;
-    engineRef.current?.setRivalInputPaused(true);
-    setMenuOpen(true);
-    menuOpenRef.current = true;
+    menuPauseStartedAtRef.current = performance.now();
+    menuPausedRaceRef.current = true;
+    engineRef.current?.setPaused(true);
+    engineRef.current?.setGhostPaused(true);
+    if (gameModeRef.current === 'rival') {
+      engineRef.current?.setRivalInputPaused(true);
+    }
   }, []);
 
-  const closeMenu = useCallback(() => {
-    if (gameModeRef.current === null) return;
-    setMenuOpen(false);
-    menuOpenRef.current = false;
+  const resumeFromOverlayMenu = useCallback(() => {
+    const startedAt = menuPauseStartedAtRef.current;
+    if (!menuPausedRaceRef.current || startedAt == null) return;
+    const pausedDuration = Math.max(0, performance.now() - startedAt);
+    if (lapStartRef.current != null) lapStartRef.current += pausedDuration;
+    if (raceStartTimeRef.current != null) raceStartTimeRef.current += pausedDuration;
+    if (rivalLapStartRef.current != null) rivalLapStartRef.current += pausedDuration;
     inputBlockedRef.current = inputWasBlockedBeforeMenuRef.current;
-    if (raceStateRef.current === 'racing' && gameModeRef.current === 'rival') {
-      engineRef.current?.setRivalInputPaused(false);
+    menuPauseStartedAtRef.current = null;
+    menuPausedRaceRef.current = false;
+    engineRef.current?.setPaused(false);
+    if (raceStateRef.current === 'racing') {
+      if (gameModeRef.current === 'timeTrial') {
+        engineRef.current?.setGhostPaused(false);
+      }
+      if (gameModeRef.current === 'rival') {
+        engineRef.current?.setRivalInputPaused(false);
+      }
     }
-  }, []);
-
-  const selectMode = useCallback((mode) => {
-    setGameMode(mode);
-    gameModeRef.current = mode;
-    setRaceHudVisible(false);
-    setRaceState('idle');
-    raceStateRef.current = 'idle';
-    setMenuOpen(false);
-    menuOpenRef.current = false;
-  }, []);
-
-  const switchMode = useCallback((newMode) => {
-    setGameMode(null);
-    gameModeRef.current = null;
-    setRaceState('idle');
-    raceStateRef.current = 'idle';
-    inputBlockedRef.current = false;
-    setSpeed(0);
-    setGear(1);
-    setRpm(0);
-    setRaceHudVisible(false);
-    setElapsed(0);
-    setLastLap(null);
-    setBestLap(null);
-    setCurrentLap(0);
-    setLapTimes(Array(TOTAL_LAPS).fill(null));
-    setTotalRaceTime(null);
-    setDamage(0);
-    setCarDestroyed(false);
-    setWinner(null);
-    setRivalTotalTime(null);
-    setLightsVisible(false);
-    lastGapRef.current = 0;
-    countdownTimersRef.current.forEach(clearTimeout);
-    countdownTimersRef.current = [];
-    setTimeout(() => {
-      setGameMode(newMode);
-      gameModeRef.current = newMode;
-      setMenuOpen(false);
-      menuOpenRef.current = false;
-    }, 0);
-  }, []);
-
-  const handleTrackSelect = useCallback((trackId) => {
-    playClickSound();
-    setSelectedTrack(trackId);
-    selectedTrackRef.current = trackId;
-    setMenuStep('mode');
-  }, []);
-
-  const handleModeSelect = useCallback((mode) => {
-    playClickSound();
-    setMenuStep('track');
-    const needsNewEngine = gameModeRef.current !== null;
-    if (needsNewEngine) {
-      switchMode(mode);
-    } else {
-      selectMode(mode);
-    }
-  }, [switchMode, selectMode]);
-
-  const handleBackToTracks = useCallback(() => {
-    playClickSound();
-    setMenuStep('track');
   }, []);
 
   useEffect(() => {
@@ -475,15 +446,15 @@ export function GameView() {
   }, []);
 
   const handleOverlayMenuRestart = useCallback(() => {
+    resumeFromOverlayMenu();
     setOverlayMenuOpen(false);
-    setMenuOpen(false);
-    menuOpenRef.current = false;
     startCountdown();
-  }, [startCountdown]);
+  }, [resumeFromOverlayMenu, startCountdown]);
 
   const handleOverlayMenuResume = useCallback(() => {
     setOverlayMenuOpen(false);
-  }, []);
+    resumeFromOverlayMenu();
+  }, [resumeFromOverlayMenu]);
 
   const handleStartLapRace = useCallback(() => {
     playClickSound();
@@ -511,10 +482,11 @@ export function GameView() {
   }, []);
 
   useEffect(() => {
-    if (gameMode === null || menuOpen) {
+    if (gameMode === null) {
       setOverlayMenuOpen(false);
+      resumeFromOverlayMenu();
     }
-  }, [gameMode, menuOpen]);
+  }, [gameMode, resumeFromOverlayMenu]);
 
   useEffect(() => {
     function onKeyDown(e) {
@@ -522,7 +494,12 @@ export function GameView() {
         e.preventDefault();
         if (gameModeRef.current !== null) {
           playClickSound();
-          setOverlayMenuOpen((prev) => !prev);
+          setOverlayMenuOpen((prev) => {
+            const next = !prev;
+            if (next) pauseForOverlayMenu();
+            else resumeFromOverlayMenu();
+            return next;
+          });
         }
         return;
       }
@@ -535,7 +512,7 @@ export function GameView() {
         return;
       }
       if (e.key === 'g' || e.key === 'G') {
-        if (gameModeRef.current !== 'timeTrial' || menuOpenRef.current) return;
+        if (gameModeRef.current !== 'timeTrial' || overlayMenuOpen) return;
         if (!ghostDataRef.current) {
           showToast('Complete a lap to see the ghost car');
           return;
@@ -545,12 +522,12 @@ export function GameView() {
         showToast(ghostVisibleRef.current ? 'Ghost car ON' : 'Ghost car OFF');
       }
       if (e.key === 'x' || e.key === 'X') {
-        if (!menuOpenRef.current) engineRef.current?.activateDrs();
+        if (!overlayMenuOpen) engineRef.current?.activateDrs();
       }
     }
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [startCountdown, showToast]);
+  }, [overlayMenuOpen, pauseForOverlayMenu, resumeFromOverlayMenu, startCountdown, showToast]);
 
   useEffect(() => {
     function isInCenter(clientX, clientY) {
@@ -563,7 +540,7 @@ export function GameView() {
       );
     }
     function onTouchEnd(e) {
-      if (gameModeRef.current === null || menuOpenRef.current) return;
+      if (gameModeRef.current === null || overlayMenuOpen) return;
       const touch = e.changedTouches?.[0];
       if (!touch) return;
       const x = touch.clientX;
@@ -580,7 +557,7 @@ export function GameView() {
     }
     document.addEventListener('touchend', onTouchEnd, { passive: false });
     return () => document.removeEventListener('touchend', onTouchEnd);
-  }, [startCountdown]);
+  }, [overlayMenuOpen, startCountdown]);
 
   useEffect(() => {
     return () => {
@@ -605,127 +582,37 @@ export function GameView() {
     return fastest;
   }, null);
 
-  const hasActiveGame = gameMode !== null;
   const showRaceHud = raceHudVisible && gameMode !== null;
 
   return (
     <div className="game-view">
-      {menuOpen && (
-        <div className="game-menu">
-          <div className="menu-content">
-            <h1 className="menu-title">PHORMULA ONE</h1>
-            <p className="menu-subtitle">5 Laps</p>
-
-            {hasActiveGame ? (
-              <div className="menu-options">
-                {gameMode === 'timeTrial' ? (
-                  <div className="menu-card-stack">
-                    <button className="menu-card menu-card-half" type="button" onClick={closeMenu}>
-                      <span className="menu-card-title">Resume</span>
-                    </button>
-                    <button className="menu-card menu-card-half" type="button" onClick={() => { setMenuOpen(false); menuOpenRef.current = false; startCountdown(); }}>
-                      <span className="menu-card-title">Restart</span>
-                    </button>
-                  </div>
-                ) : (
-                  <div className="menu-card-stack">
-                    <button className="menu-card menu-card-half" type="button" onClick={closeMenu}>
-                      <span className="menu-card-title">Resume</span>
-                    </button>
-                    <button className="menu-card menu-card-half" type="button" onClick={() => { setMenuOpen(false); menuOpenRef.current = false; startCountdown(); }}>
-                      <span className="menu-card-title">Restart</span>
-                    </button>
-                  </div>
-                )}
-                <button className="menu-card" type="button" onClick={() => { setMenuStep('track'); setGameMode(null); gameModeRef.current = null; }}>
-                  <span className="menu-card-title">New Race</span>
-                  <span className="menu-card-desc">Pick a different track or mode</span>
-                </button>
-              </div>
-            ) : menuStep === 'track' ? (
-              <>
-                <p className="menu-step-label">Choose your track</p>
-                <div className="menu-tracks">
-                  {TRACK_LIST.map((track) => (
-                    <button
-                      key={track.id}
-                      className={`track-card${selectedTrack === track.id ? ' track-card-selected' : ''}`}
-                      type="button"
-                      onClick={() => handleTrackSelect(track.id)}
-                      style={{ '--track-color': track.themeColor }}
-                    >
-                      <span className="track-card-icon">{track.icon}</span>
-                      <span className="track-card-name">{track.name}</span>
-                      <span className="track-card-desc">{track.description}</span>
-                    </button>
-                  ))}
-                </div>
-              </>
-            ) : (
-              <>
-                <p className="menu-step-label">Choose race type</p>
-                <div className="menu-options">
-                  <button className="menu-card" type="button" onClick={() => handleModeSelect('timeTrial')}>
-                    <span className="menu-card-icon">&#128337;</span>
-                    <span className="menu-card-title">On My Own</span>
-                    <span className="menu-card-desc">Try to get the fastest lap, race against your ghost car</span>
-                  </button>
-                  <button className="menu-card" type="button" onClick={() => handleModeSelect('rival')}>
-                    <span className="menu-card-icon">&#127937;</span>
-                    <span className="menu-card-title">Against a Rival</span>
-                    <span className="menu-card-desc">Race against another car head to head</span>
-                  </button>
-                </div>
-                <button className="menu-back-btn" type="button" onClick={handleBackToTracks}>
-                  Back to tracks
-                </button>
-              </>
-            )}
-
-            <p className="menu-hint">
-              {hasActiveGame ? 'Esc to resume \u00b7 Space to restart' : 'Select a track to begin'}
-            </p>
-          </div>
-        </div>
-      )}
-
       {gameMode !== null && (
         <>
+          {damageFlash && (
+            <div
+              key={damageFlash.key}
+              className="damage-hit-flash"
+              style={{ '--damage-hit-color': damageFlash.color }}
+              aria-hidden="true"
+            />
+          )}
           <div className="game-overlay">
             <div className="room-section">
-              <div className={`race-menu${overlayMenuOpen ? ' open' : ''}`}>
-                <button
-                  className="race-menu-toggle"
-                  type="button"
-                  onClick={() => setOverlayMenuOpen((prev) => !prev)}
-                  aria-expanded={overlayMenuOpen}
-                >
-                  {overlayMenuOpen ? 'Close' : 'Menu'}
-                </button>
-                <div className="race-menu-panel" aria-hidden={!overlayMenuOpen}>
-                  {!roomCode ? (
-                    <button className="race-menu-action" type="button" onClick={createRoom}>
-                      Connect phone
-                    </button>
-                  ) : (
-                    <div className="room-info">
-                      <span className="room-label">Enter this code</span>
-                      <span className="room-code">{roomCode}</span>
-                      <div className="room-qr-placeholder">QR code placeholder</div>
-                    </div>
-                  )}
-                  {raceHudVisible && (
-                    <>
-                      <button className="race-menu-action" type="button" onClick={handleOverlayMenuRestart}>
-                        Restart
-                      </button>
-                      <button className="race-menu-action" type="button" onClick={handleOverlayMenuResume}>
-                        Resume
-                      </button>
-                    </>
-                  )}
-                </div>
-              </div>
+              <button
+                className="race-menu-toggle"
+                type="button"
+                onClick={() => {
+                  setOverlayMenuOpen((prev) => {
+                    const next = !prev;
+                    if (next) pauseForOverlayMenu();
+                    else resumeFromOverlayMenu();
+                    return next;
+                  });
+                }}
+                aria-expanded={overlayMenuOpen}
+              >
+                {overlayMenuOpen ? 'Close' : 'Menu'}
+              </button>
             </div>
             <div className={`connection-status status-${connectionStatus}`}>
               {connectionStatus === 'disconnected' && 'Waiting for controller'}
@@ -751,6 +638,36 @@ export function GameView() {
               />
             </div>
           </div>
+
+          {overlayMenuOpen && (
+            <div className="race-menu-backdrop" role="dialog" aria-modal="true" aria-label="Race menu">
+              <div className="race-menu-modal">
+                <div className="race-menu-panel">
+                  {!roomCode ? (
+                    <button className="race-menu-action" type="button" onClick={createRoom}>
+                      Connect phone
+                    </button>
+                  ) : (
+                    <div className="room-info">
+                      <span className="room-label">Enter this code</span>
+                      <span className="room-code">{roomCode}</span>
+                      <div className="room-qr-placeholder">QR code placeholder</div>
+                    </div>
+                  )}
+                  {raceHudVisible && (
+                    <>
+                      <button className="race-menu-action" type="button" onClick={handleOverlayMenuRestart}>
+                        Restart
+                      </button>
+                      <button className="race-menu-action" type="button" onClick={handleOverlayMenuResume}>
+                        Resume
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
           {showRaceHud && (
             <div className="timing-hud">
@@ -825,7 +742,7 @@ export function GameView() {
             </div>
           )}
 
-          {raceState === 'finished' && !menuOpen && (
+          {raceState === 'finished' && !overlayMenuOpen && (
             <div className="start-hint">
               {carDestroyed ? (
                 <>

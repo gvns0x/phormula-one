@@ -16,6 +16,9 @@
   /* Glass – Blur */
   --glass-blur: blur(12px);
 
+  /* Glass – Shadow */
+  --shadow-glass: 0 2px 24px 0 rgba(0, 0, 0, .05);
+
   /* Glass – Click */
   --click-scale-transition: .2s ease;
   --click-scale: scale(.99);

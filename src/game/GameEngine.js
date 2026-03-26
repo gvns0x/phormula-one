@@ -300,6 +300,7 @@ export function createGameEngine(canvasRef, getInput, options) {
   let acc = 0;
   let droneView = false;
   let lastSteerInput = 0;
+  let paused = false;
 
   const trackCenter = trackConfig.centerline.reduce(
     (a, [x, z]) => ({ x: a.x + x / trackConfig.centerline.length, z: a.z + z / trackConfig.centerline.length }),
@@ -328,6 +329,10 @@ export function createGameEngine(canvasRef, getInput, options) {
   }
 
   function tick(dt) {
+    if (paused) {
+      renderer.render(scene, camera);
+      return;
+    }
     acc += Math.min(dt, 0.1);
     let offTrack = false;
     while (acc >= FIXED_DT && acc > 0) {
@@ -430,6 +435,13 @@ export function createGameEngine(canvasRef, getInput, options) {
     rafId = null;
   }
 
+  function setPaused(v) {
+    paused = !!v;
+    if (!paused) {
+      acc = 0;
+    }
+  }
+
   function resetCar() {
     carReset(playerStartPos, startRotationY);
     prevSignedDist = 0;
@@ -451,5 +463,5 @@ export function createGameEngine(canvasRef, getInput, options) {
     rivalInputPaused = v;
   }
 
-  return { start, stop, resize, tuning, resetCar, setDroneView, setRacingLineVisible, setCornerLabelsVisible, setGhostData, setGhostVisible, resetGhostPlayback, setGhostPaused, activateDrs, trackPts, resetDamage, resetRivalCar, setRivalInputPaused };
+  return { start, stop, resize, tuning, resetCar, setDroneView, setRacingLineVisible, setCornerLabelsVisible, setGhostData, setGhostVisible, resetGhostPlayback, setGhostPaused, activateDrs, trackPts, resetDamage, resetRivalCar, setRivalInputPaused, setPaused };
 }
