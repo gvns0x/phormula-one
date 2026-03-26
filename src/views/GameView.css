@@ -142,23 +142,6 @@
   align-items: flex-end;
 }
 
-.race-menu-toggle {
-  min-width: 88px;
-  padding: 0.5rem 0.7rem;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  background: rgba(255, 255, 255, 0.06);
-  color: #fff;
-  font-family: var(--font-slow);
-  font-size: 0.86rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  text-align: left;
-  cursor: pointer;
-  transition: background 0.18s ease, border-color 0.18s ease, transform 0.1s ease;
-}
-
 .race-menu-backdrop {
   position: absolute;
   inset: 0;
@@ -171,18 +154,14 @@
 }
 
 .race-menu-modal {
-  width: 80vw;
-  height: 80vh;
-  max-width: 1280px;
-  max-height: 920px;
-  min-width: min(80vw, 320px);
-  min-height: min(80vh, 260px);
-  border-radius: 16px;
+  width: 40vw;
+  height: 40vh;
+  border-radius: var(--radius);
   border: var(--border-glass);
-  background: rgba(12, 18, 30, 0.78);
+  background: var(--bg-glass);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
-  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45);
+  box-shadow: var(--shadow-glass);
   padding: clamp(1rem, 2vw, 1.8rem);
   overflow: auto;
 }
@@ -194,44 +173,6 @@
   gap: 0.6rem;
   align-items: stretch;
   justify-content: flex-start;
-}
-
-.race-menu-action {
-  width: 100%;
-  padding: 0.5rem 0.65rem;
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(255, 255, 255, 0.06);
-  color: #fff;
-  font-family: var(--font-slow);
-  font-size: 0.84rem;
-  text-transform: uppercase;
-  font-weight: 500;
-  text-align: left;
-  cursor: pointer;
-  transition: background 0.16s ease, border-color 0.16s ease, transform 0.1s ease;
-  background: var(--bg-glass);
-  border: var(--border-glass);
-}
-
-@media (max-width: 768px) {
-  .race-menu-action:hover {
-    background: rgba(255, 255, 255, 0.12);
-    border-color: rgba(255, 255, 255, 0.28);
-  }
-
-  .race-menu-toggle:hover {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.26);
-  }
-}
-
-.race-menu-action:active {
-  transform: scale(.99);
-}
-
-.race-menu-toggle:active {
-  transform: scale(.99);
 }
 
 .room-info {

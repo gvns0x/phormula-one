@@ -1,5 +1,6 @@
 export function CarStatus({ damage }) {
   const d = Math.max(0, Math.min(damage ?? 0, 1));
+  const health = 1 - d;
   const hue = 120 * (1 - d);
   const color = `hsl(${hue}, 100%, 50%)`;
 
@@ -43,7 +44,7 @@ export function CarStatus({ damage }) {
       <div className="damage-bar-track">
         <div
           className="damage-bar-fill"
-          style={{ width: `${d * 100}%`, backgroundColor: color }}
+          style={{ width: `${health * 100}%`, backgroundColor: color }}
         />
       </div>
     </div>

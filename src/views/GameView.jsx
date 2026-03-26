@@ -5,6 +5,7 @@ import { useControllerSync } from '../networking/useControllerSync';
 import { DevToolsPanel } from '../components/DevToolsPanel';
 import { MiniMap } from '../components/MiniMap';
 import { CarStatus } from '../components/CarStatus';
+import { MenuButton } from '../components/MenuButton';
 import { playClickSound } from '../ui/clickSound';
 import './GameView.css';
 
@@ -167,7 +168,10 @@ export function GameView() {
         setDrsActive(!!s.drsActive);
         if (s.damage != null) {
           const clampedDamage = Math.max(0, Math.min(s.damage, 1));
-          if (clampedDamage - lastDamageRef.current > HIT_FLASH_MIN_DAMAGE_DELTA) {
+          const shouldFlash =
+            raceStateRef.current === 'racing' &&
+            clampedDamage - lastDamageRef.current > HIT_FLASH_MIN_DAMAGE_DELTA;
+          if (shouldFlash) {
             setDamageFlash({
               key: performance.now(),
               color: getDamageFlashColor(clampedDamage),
@@ -598,9 +602,8 @@ export function GameView() {
           )}
           <div className="game-overlay">
             <div className="room-section">
-              <button
-                className="race-menu-toggle"
-                type="button"
+              <MenuButton
+                variant="toggle"
                 onClick={() => {
                   setOverlayMenuOpen((prev) => {
                     const next = !prev;
@@ -612,7 +615,7 @@ export function GameView() {
                 aria-expanded={overlayMenuOpen}
               >
                 {overlayMenuOpen ? 'Close' : 'Menu'}
-              </button>
+              </MenuButton>
             </div>
             <div className={`connection-status status-${connectionStatus}`}>
               {connectionStatus === 'disconnected' && 'Waiting for controller'}
@@ -644,9 +647,9 @@ export function GameView() {
               <div className="race-menu-modal">
                 <div className="race-menu-panel">
                   {!roomCode ? (
-                    <button className="race-menu-action" type="button" onClick={createRoom}>
+                    <MenuButton variant="action" onClick={createRoom}>
                       Connect phone
-                    </button>
+                    </MenuButton>
                   ) : (
                     <div className="room-info">
                       <span className="room-label">Enter this code</span>
@@ -656,12 +659,12 @@ export function GameView() {
                   )}
                   {raceHudVisible && (
                     <>
-                      <button className="race-menu-action" type="button" onClick={handleOverlayMenuRestart}>
+                      <MenuButton variant="action" onClick={handleOverlayMenuRestart}>
                         Restart
-                      </button>
-                      <button className="race-menu-action" type="button" onClick={handleOverlayMenuResume}>
+                      </MenuButton>
+                      <MenuButton variant="action" onClick={handleOverlayMenuResume}>
                         Resume
-                      </button>
+                      </MenuButton>
                     </>
                   )}
                 </div>
