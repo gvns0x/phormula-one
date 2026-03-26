@@ -656,23 +656,19 @@ export function GameView() {
                       <h2 className="menu-card-title">Keyboard Controls</h2>
                       <ul className="controls-list">
                         <li className="controls-item">
-                          <span className="controls-key-row">
-                            <kbd className="keycap">Left</kbd>
-                            <kbd className="keycap">Right</kbd>
+                          <span className="arrow-cluster" aria-hidden="true">
+                            <span className="arrow-cluster-row">
+                              <span className="arrow-cluster-spacer" />
+                              <kbd className="keycap keycap-arrow">↑</kbd>
+                              <span className="arrow-cluster-spacer" />
+                            </span>
+                            <span className="arrow-cluster-row">
+                              <kbd className="keycap keycap-arrow">←</kbd>
+                              <kbd className="keycap keycap-arrow">↓</kbd>
+                              <kbd className="keycap keycap-arrow">→</kbd>
+                            </span>
                           </span>
-                          <span className="controls-action">Steer</span>
-                        </li>
-                        <li className="controls-item">
-                          <span className="controls-key-row">
-                            <kbd className="keycap">Up</kbd>
-                          </span>
-                          <span className="controls-action">Throttle</span>
-                        </li>
-                        <li className="controls-item">
-                          <span className="controls-key-row">
-                            <kbd className="keycap">Down</kbd>
-                          </span>
-                          <span className="controls-action">Brake / Reverse</span>
+                          <span className="controls-action">Arrow keys: steer, throttle, brake/reverse</span>
                         </li>
                         <li className="controls-item">
                           <span className="controls-key-row">
@@ -713,6 +709,7 @@ export function GameView() {
           {showRaceHud && (
             <div className="timing-hud">
               <div className="timer">{formatTime(elapsed)}</div>
+              <div className='lap-hud'>
               {bestLap != null && (
                 <div className="best-lap">
                   <span className="lap-label">FASTEST</span>
@@ -730,6 +727,7 @@ export function GameView() {
                   )}
                 </div>
               )}
+              </div>
             </div>
           )}
 
