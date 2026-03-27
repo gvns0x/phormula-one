@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import './TeamRadioToast.css';
 
-const BAR_COUNT = 16;
+const BAR_COUNT = 12;
 
 function RadioVisualizer() {
   const barsRef = useRef([]);
@@ -50,21 +50,30 @@ function RadioVisualizer() {
   );
 }
 
-export function TeamRadioToast({ message, subtitle, className = '' }) {
+export function TeamRadioToast({ message, subtitle, className = '', tiltDeg = 0 }) {
   const rootClass = ['team-radio-toast', className].filter(Boolean).join(' ');
 
   return (
-    <div className={rootClass}>
-      <div className="team-radio-toast__header">
-        <span className="team-radio-toast__label">Radio</span>
-        <RadioVisualizer />
+    <div className="team-radio-toast-anchor">
+      <div
+        className="team-radio-toast__tilt"
+        style={{
+          transform: `perspective(1000px) rotateY(${tiltDeg.toFixed(1)}deg) rotateZ(${(tiltDeg * 0.1).toFixed(1)}deg)`,
+        }}
+      >
+        <div className={rootClass}>
+          <div className="team-radio-toast__header">
+            <span className="team-radio-toast__label">Radio</span>
+            <RadioVisualizer />
+          </div>
+          <p className="team-radio-toast__message" role="status" aria-live="polite">
+            &ldquo;{message}&rdquo;
+          </p>
+          {subtitle ? (
+            <p className="team-radio-toast__subtitle">&ldquo;{subtitle}&rdquo;</p>
+          ) : null}
+        </div>
       </div>
-      <p className="team-radio-toast__message" role="status" aria-live="polite">
-        &ldquo;{message}&rdquo;
-      </p>
-      {subtitle ? (
-        <p className="team-radio-toast__subtitle">&ldquo;{subtitle}&rdquo;</p>
-      ) : null}
     </div>
   );
 }

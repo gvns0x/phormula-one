@@ -10,6 +10,15 @@ import { OverlayLeaderboard } from '../components/OverlayLeaderboard';
 import { RaceSeriesOverlay } from '../components/RaceSeriesOverlay';
 import { LapQualityDots } from '../components/LapQualityDots';
 import { TeamRadioToast } from '../components/TeamRadioToast';
+import {
+  pickRandom,
+  FIRST_LAP_CLEAN,
+  FIRST_LAP_DIRTY,
+  NEW_FASTEST_LAP,
+  LAST_LAP,
+  DAMAGE_ORANGE,
+  DAMAGE_RED,
+} from '../game/teamRadioMessages';
 import { playClickSound } from '../ui/clickSound';
 import './GameView.css';
 
@@ -46,6 +55,9 @@ const N_TRACK_PTS = 800;
 const LAP_OVERLAY_MAX_TILT_DEG = 8;
 const LAP_OVERLAY_SMOOTHING = 0.15;
 const HIT_FLASH_MIN_DAMAGE_DELTA = 0.001;
+const DAMAGE_TOAST_ORANGE_MIN = 0.35;
+const DAMAGE_TOAST_RED_MIN = 0.65;
+const TOAST_APPEAR_DELAY_MS = 1500;
 const CONTROLLER_CONNECT_URL_PLACEHOLDER = 'https://example.com/controller';
 
 function getDamageFlashColor(damageValue) {
@@ -147,6 +159,7 @@ export function GameView() {
   const [lastLap, setLastLap] = useState(null);
   const [bestLap, setBestLap] = useState(null);
   const [toastMessage, setToastMessage] = useState(null);
+  const [toastKey, setToastKey] = useState(0);
   const [carPosition, setCarPosition] = useState(null);
   const [ghostPosition, setGhostPosition] = useState(null);
   const [rivalPosition, setRivalPosition] = useState(null);
@@ -187,6 +200,8 @@ export function GameView() {
   const ghostDataRef = useRef(null);
   const ghostVisibleRef = useRef(true);
   const showToastRef = useRef(null);
+  const pendingToastTimerRef = useRef(null);
+  const bestLapRef = useRef(null);
   const startRaceCtaTimerRef = useRef(null);
   const currentLapRef = useRef(0);
   const currentRaceRef = useRef(1);
@@ -265,6 +280,17 @@ export function GameView() {
               key: performance.now(),
               color: getDamageFlashColor(clampedDamage),
             });
+            const prevD = lastDamageRef.current;
+            const crossedRed = prevD < DAMAGE_TOAST_RED_MIN && clampedDamage >= DAMAGE_TOAST_RED_MIN;
+            const crossedOrange =
+              prevD < DAMAGE_TOAST_ORANGE_MIN &&
+              clampedDamage >= DAMAGE_TOAST_ORANGE_MIN &&
+              clampedDamage < DAMAGE_TOAST_RED_MIN;
+            if (crossedRed) {
+              showToastRef.current?.(pickRandom(DAMAGE_RED));
+            } else if (crossedOrange) {
+              showToastRef.current?.(pickRandom(DAMAGE_ORANGE));
+            }
           }
           lastDamageRef.current = clampedDamage;
           setDamage(clampedDamage);
@@ -299,6 +325,7 @@ export function GameView() {
             playerLastCrossTimeRef.current = now;
             const completedLapIdx = currentLapRef.current - 1;
             const lapIsClean = !currentLapDirtyRef.current;
+            const prevBest = bestLapRef.current;
             setLapTimes(prev => {
               if (completedLapIdx < 0 || completedLapIdx >= prev.length) return prev;
               const next = [...prev];
@@ -332,6 +359,8 @@ export function GameView() {
               setBestLap(prev => (prev == null || lapTime < prev) ? lapTime : prev);
             }
 
+            bestLapRef.current = prevBest == null ? lapTime : Math.min(prevBest, lapTime);
+
             if (currentLapRef.current >= TOTAL_LAPS) {
               const total = now - raceStartTimeRef.current;
               setTotalRaceTime(total);
@@ -351,6 +380,13 @@ export function GameView() {
               setCurrentLap(currentLapRef.current);
               lapStartRef.current = now;
               setElapsed(0);
+              if (currentLapRef.current === TOTAL_LAPS) {
+                showToastRef.current?.(pickRandom(LAST_LAP));
+              } else if (completedLapIdx === 0) {
+                showToastRef.current?.(lapIsClean ? FIRST_LAP_CLEAN : FIRST_LAP_DIRTY);
+              } else if (prevBest != null && lapTime < prevBest) {
+                showToastRef.current?.(pickRandom(NEW_FASTEST_LAP));
+              }
             }
           }
         }
@@ -475,6 +511,12 @@ export function GameView() {
     setElapsed(0);
     setLastLap(null);
     setBestLap(null);
+    bestLapRef.current = null;
+    if (pendingToastTimerRef.current) {
+      clearTimeout(pendingToastTimerRef.current);
+      pendingToastTimerRef.current = null;
+    }
+    setToastMessage(null);
     setLightsState(0);
     setLightsVisible(true);
 
@@ -497,7 +539,7 @@ export function GameView() {
       if (gameModeRef.current === 'rival') {
         engineRef.current?.setRivalInputPaused(false);
       }
-      showToastRef.current?.("ALL RIGHT, LIGHTS OUT, LET'S PUSH. ALL RIGHT, LIGHTS OUT, LET'S PUSH. ALL RIGHT, LIGHTS OUT, LET'S PUSH.");
+      showToastRef.current?.("ALL RIGHT, LIGHTS OUT, LET'S PUSH.");
       setTimeout(() => setLightsVisible(false), 1200);
     }, 5000 + randomDelay));
 
@@ -544,12 +586,24 @@ export function GameView() {
   }, [startCountdown, onRestartRef]);
 
   const showToast = useCallback((msg) => {
-    setToastMessage(msg);
+    if (pendingToastTimerRef.current) {
+      clearTimeout(pendingToastTimerRef.current);
+      pendingToastTimerRef.current = null;
+    }
+    pendingToastTimerRef.current = setTimeout(() => {
+      pendingToastTimerRef.current = null;
+      setToastMessage(msg);
+      setToastKey((k) => k + 1);
+    }, TOAST_APPEAR_DELAY_MS);
   }, []);
 
   useEffect(() => {
     showToastRef.current = showToast;
   }, [showToast]);
+
+  useEffect(() => () => {
+    if (pendingToastTimerRef.current) clearTimeout(pendingToastTimerRef.current);
+  }, []);
 
   const handleOverlayMenuRestart = useCallback(() => {
     resumeFromOverlayMenu();
@@ -1029,7 +1083,11 @@ export function GameView() {
           </div>
 
           {toastMessage && (
-            <TeamRadioToast key={toastMessage} message={toastMessage} />
+            <TeamRadioToast
+              key={toastKey}
+              message={toastMessage}
+              tiltDeg={lapOverlayTilt}
+            />
           )}
         </>
       )}

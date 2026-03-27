@@ -1,9 +1,22 @@
-.team-radio-toast {
-  --radio-bg: rgba(18,18,18,0.75);
-  --radio-red: linear-gradient(180deg, #ff2d2d00 0%, #ff2d2d 50%, #ff2d2d 100%);
+.team-radio-toast-anchor {
   position: absolute;
-  bottom: 2rem;
-  left: 2rem;
+  top: 7.2rem;
+  right: 1.5rem;
+  left: auto;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.team-radio-toast__tilt {
+  transform-origin: right center;
+  transform-style: preserve-3d;
+  will-change: transform;
+  transition: transform 0.08s linear;
+}
+
+.team-radio-toast {
+  --radio-bg: rgba(18,18,18,0.7);
+  --radio-red: linear-gradient(180deg, #ff2d2d00 0%, #ff2d2d 50%, #ff2d2d 100%);
   max-width: min(220px, calc(100vw - 3rem));
   padding: 0.85rem 1rem 1rem;
   background: var(--radio-bg);
@@ -13,7 +26,7 @@
   border-radius: var(--radius);
   border: var(--border-glass);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
-  animation: team-radio-toast-in 0.4s ease forwards;
+  animation: team-radio-slide-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
 .team-radio-toast__header {
@@ -25,7 +38,7 @@
 
 .team-radio-toast__label {
   font-family: var(--font-fast, "Audiowide", sans-serif);
-  font-size: 1.35rem;
+  font-size: 1.15rem;
   font-weight: 600;
   text-transform: uppercase;
   color: var(--radio-white);
@@ -74,13 +87,13 @@
   color: var(--radio-red);
 }
 
-@keyframes team-radio-toast-in {
+@keyframes team-radio-slide-in {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateX(calc(100% + 1.5rem));
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateX(0);
   }
 }
