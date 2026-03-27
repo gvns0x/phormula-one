@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { createGameEngine } from '../game/GameEngine';
 import { MAX_RPM } from '../game/gearbox';
 import { useControllerSync } from '../networking/useControllerSync';
@@ -6,6 +6,10 @@ import { DevToolsPanel } from '../components/DevToolsPanel';
 import { MiniMap } from '../components/MiniMap';
 import { CarStatus } from '../components/CarStatus';
 import { MenuButton } from '../components/MenuButton';
+import { OverlayLeaderboard } from '../components/OverlayLeaderboard';
+import { RaceSeriesOverlay } from '../components/RaceSeriesOverlay';
+import { LapQualityDots } from '../components/LapQualityDots';
+import { TeamRadioToast } from '../components/TeamRadioToast';
 import { playClickSound } from '../ui/clickSound';
 import './GameView.css';
 
@@ -37,6 +41,7 @@ function formatGap(ms) {
 }
 
 const TOTAL_LAPS = 5;
+const TOTAL_RACES = 5;
 const N_TRACK_PTS = 800;
 const LAP_OVERLAY_MAX_TILT_DEG = 8;
 const LAP_OVERLAY_SMOOTHING = 0.15;
@@ -48,6 +53,77 @@ function getDamageFlashColor(damageValue) {
   // Keep hit feedback in warm tones only: orange -> red (no green flash).
   const hue = 30 * (1 - d);
   return `hsl(${hue}, 100%, 50%)`;
+}
+
+function createEmptyRaceResults() {
+  return Array.from({ length: TOTAL_RACES }, () => ({
+    raceTime: null,
+    fastestLap: null,
+    lapStates: Array(TOTAL_LAPS).fill(false),
+  }));
+}
+
+function buildRaceSeriesEntries({
+  totalRaces,
+  totalLaps,
+  currentRace,
+  raceState,
+  raceResults,
+  lapTimes,
+  sessionFastestLap,
+  currentRaceLapStates,
+  totalRaceTime,
+}) {
+  const entries = [];
+  for (let raceIdx = 1; raceIdx <= totalRaces; raceIdx++) {
+    const saved = raceResults[raceIdx - 1];
+    const isActive = raceIdx === currentRace;
+    const isFuture = raceIdx > currentRace;
+
+    let totalLabel = 'NO TIME';
+    let fastestLabel = 'NO TIME';
+    let cleanLabel = '—';
+
+    if (isFuture) {
+      // placeholders only
+    } else if (raceIdx < currentRace) {
+      totalLabel = saved.raceTime != null ? formatTime(saved.raceTime) : 'NO TIME';
+      fastestLabel = saved.fastestLap != null ? formatTime(saved.fastestLap) : 'NO TIME';
+      const c = (saved.lapStates || []).filter(Boolean).length;
+      cleanLabel = `${c}/${totalLaps}`;
+    } else {
+      const finished = saved?.raceTime != null || (raceState === 'finished' && totalRaceTime != null);
+      if (finished) {
+        const t = saved?.raceTime ?? totalRaceTime;
+        const f = saved?.fastestLap ?? sessionFastestLap;
+        const states = saved?.raceTime != null ? saved.lapStates : currentRaceLapStates;
+        totalLabel = t != null ? formatTime(t) : 'NO TIME';
+        fastestLabel = f != null ? formatTime(f) : 'NO TIME';
+        const c = (states || []).filter(Boolean).length;
+        cleanLabel = `${c}/${totalLaps}`;
+      } else {
+        totalLabel = 'NO TIME';
+        fastestLabel = sessionFastestLap != null ? formatTime(sessionFastestLap) : 'NO TIME';
+        const completedLaps = lapTimes.filter((lt) => lt != null).length;
+        if (completedLaps > 0) {
+          const cleanSoFar = currentRaceLapStates.slice(0, completedLaps).filter(Boolean).length;
+          cleanLabel = `${cleanSoFar}/${completedLaps}`;
+        } else {
+          cleanLabel = '0/0';
+        }
+      }
+    }
+
+    entries.push({
+      key: `series-race-${raceIdx}`,
+      num: raceIdx,
+      isActive,
+      totalLabel,
+      fastestLabel,
+      cleanLabel,
+    });
+  }
+  return entries;
 }
 
 export function GameView() {
@@ -78,6 +154,9 @@ export function GameView() {
   const [drsActive, setDrsActive] = useState(false);
   const [currentLap, setCurrentLap] = useState(0);
   const [lapTimes, setLapTimes] = useState(() => Array(TOTAL_LAPS).fill(null));
+  const [currentRace, setCurrentRace] = useState(1);
+  const [raceResults, setRaceResults] = useState(() => createEmptyRaceResults());
+  const [currentRaceLapStates, setCurrentRaceLapStates] = useState(() => Array(TOTAL_LAPS).fill(false));
   const [totalRaceTime, setTotalRaceTime] = useState(null);
   const [damage, setDamage] = useState(0);
   const [damageFlash, setDamageFlash] = useState(null);
@@ -107,9 +186,10 @@ export function GameView() {
   const ghostRecordingRef = useRef([]);
   const ghostDataRef = useRef(null);
   const ghostVisibleRef = useRef(true);
-  const toastTimerRef = useRef(null);
+  const showToastRef = useRef(null);
   const startRaceCtaTimerRef = useRef(null);
   const currentLapRef = useRef(0);
+  const currentRaceRef = useRef(1);
   const raceStartTimeRef = useRef(null);
   const rivalLapStartRef = useRef(null);
   const [trackPts, setTrackPts] = useState(null);
@@ -119,6 +199,7 @@ export function GameView() {
   const lastGapRef = useRef(0);
   const lapOverlayTiltRef = useRef(0);
   const lastDamageRef = useRef(0);
+  const currentLapDirtyRef = useRef(false);
 
   const inputWasBlockedBeforeMenuRef = useRef(false);
   const menuPauseStartedAtRef = useRef(null);
@@ -131,6 +212,10 @@ export function GameView() {
   useEffect(() => {
     gameModeRef.current = gameMode;
   }, [gameMode]);
+
+  useEffect(() => {
+    currentRaceRef.current = currentRace;
+  }, [currentRace]);
 
   const wrappedGetInput = useCallback(() => {
     if (inputBlockedRef.current) return { steer: 0, throttle: 0, brake: 0 };
@@ -173,6 +258,9 @@ export function GameView() {
             raceStateRef.current === 'racing' &&
             clampedDamage - lastDamageRef.current > HIT_FLASH_MIN_DAMAGE_DELTA;
           if (shouldFlash) {
+            if (gameModeRef.current === 'timeTrial') {
+              currentLapDirtyRef.current = true;
+            }
             setDamageFlash({
               key: performance.now(),
               color: getDamageFlashColor(clampedDamage),
@@ -210,12 +298,20 @@ export function GameView() {
           if (lapTime > 5000) {
             playerLastCrossTimeRef.current = now;
             const completedLapIdx = currentLapRef.current - 1;
+            const lapIsClean = !currentLapDirtyRef.current;
             setLapTimes(prev => {
               if (completedLapIdx < 0 || completedLapIdx >= prev.length) return prev;
               const next = [...prev];
               next[completedLapIdx] = lapTime;
               return next;
             });
+            setCurrentRaceLapStates((prev) => {
+              if (completedLapIdx < 0 || completedLapIdx >= prev.length) return prev;
+              const next = [...prev];
+              next[completedLapIdx] = lapIsClean;
+              return next;
+            });
+            currentLapDirtyRef.current = false;
 
             if (gameModeRef.current === 'timeTrial') {
               const recording = ghostRecordingRef.current;
@@ -372,6 +468,8 @@ export function GameView() {
     setRaceHudVisible(true);
     setCurrentLap(1);
     setLapTimes(Array(TOTAL_LAPS).fill(null));
+    setCurrentRaceLapStates(Array(TOTAL_LAPS).fill(false));
+    currentLapDirtyRef.current = false;
     setTotalRaceTime(null);
     setRaceState('countdown');
     setElapsed(0);
@@ -399,6 +497,7 @@ export function GameView() {
       if (gameModeRef.current === 'rival') {
         engineRef.current?.setRivalInputPaused(false);
       }
+      showToastRef.current?.("ALL RIGHT, LIGHTS OUT, LET'S PUSH. ALL RIGHT, LIGHTS OUT, LET'S PUSH. ALL RIGHT, LIGHTS OUT, LET'S PUSH.");
       setTimeout(() => setLightsVisible(false), 1200);
     }, 5000 + randomDelay));
 
@@ -445,10 +544,12 @@ export function GameView() {
   }, [startCountdown, onRestartRef]);
 
   const showToast = useCallback((msg) => {
-    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     setToastMessage(msg);
-    toastTimerRef.current = setTimeout(() => setToastMessage(null), 3000);
   }, []);
+
+  useEffect(() => {
+    showToastRef.current = showToast;
+  }, [showToast]);
 
   const handleOverlayMenuRestart = useCallback(() => {
     resumeFromOverlayMenu();
@@ -470,6 +571,17 @@ export function GameView() {
       setStartRaceCtaExiting(false);
       startCountdown();
     }, 360);
+  }, [startCountdown]);
+
+  const handleStartNextRace = useCallback(() => {
+    playClickSound();
+    if (currentRaceRef.current >= TOTAL_RACES) {
+      setCurrentRace(1);
+      setRaceResults(createEmptyRaceResults());
+    } else {
+      setCurrentRace((prev) => prev + 1);
+    }
+    startCountdown();
   }, [startCountdown]);
 
   const handleStartRaceCenterMouseMove = useCallback((e) => {
@@ -512,7 +624,11 @@ export function GameView() {
         e.preventDefault();
         if (gameModeRef.current !== null) {
           playClickSound();
-          startCountdown();
+          if (gameModeRef.current === 'timeTrial' && raceStateRef.current === 'finished') {
+            handleStartNextRace();
+          } else {
+            startCountdown();
+          }
         }
         return;
       }
@@ -532,7 +648,7 @@ export function GameView() {
     }
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [overlayMenuOpen, pauseForOverlayMenu, resumeFromOverlayMenu, startCountdown, showToast]);
+  }, [overlayMenuOpen, pauseForOverlayMenu, resumeFromOverlayMenu, startCountdown, showToast, handleStartNextRace]);
 
   useEffect(() => {
     function isInCenter(clientX, clientY) {
@@ -593,6 +709,39 @@ export function GameView() {
   }, null);
 
   const showRaceHud = raceHudVisible && gameMode !== null;
+  const currentRaceResult = raceResults[currentRace - 1] ?? null;
+  const raceFastestLap = fastestLapTime ?? currentRaceResult?.fastestLap ?? null;
+
+  const raceSeriesEntries = useMemo(
+    () =>
+      buildRaceSeriesEntries({
+        totalRaces: TOTAL_RACES,
+        totalLaps: TOTAL_LAPS,
+        currentRace,
+        raceState,
+        raceResults,
+        lapTimes,
+        sessionFastestLap: fastestLapTime,
+        currentRaceLapStates,
+        totalRaceTime,
+      }),
+    [currentRace, raceState, raceResults, lapTimes, fastestLapTime, currentRaceLapStates, totalRaceTime]
+  );
+
+  useEffect(() => {
+    if (isRivalMode || raceState !== 'finished' || totalRaceTime == null) return;
+    const raceIdx = currentRace - 1;
+    setRaceResults((prev) => {
+      if (raceIdx < 0 || raceIdx >= prev.length) return prev;
+      const next = [...prev];
+      next[raceIdx] = {
+        raceTime: totalRaceTime,
+        fastestLap: raceFastestLap,
+        lapStates: [...currentRaceLapStates],
+      };
+      return next;
+    });
+  }, [isRivalMode, raceState, totalRaceTime, currentRace, raceFastestLap, currentRaceLapStates]);
 
   return (
     <div className="game-view">
@@ -733,35 +882,35 @@ export function GameView() {
 
           {!isRivalMode && showRaceHud && currentLap > 0 && raceState !== 'idle' && (
             <>
-              <div className="lap-times-overlay-visible">
-                <div
-                  className="lap-times-overlay"
-                  style={{
-                    transform: `perspective(1000px) rotateY(${lapOverlayTilt.toFixed(1)}deg) rotateZ(${(lapOverlayTilt * 0.1).toFixed(1)}deg)`,
-                  }}
-                >
-                <div className="lap-counter">
-                  <span className="lap-counter-current">LAP {playerMaxLap}</span>
-                  <span className="lap-counter-total">/{TOTAL_LAPS}</span>
-                </div>
-                  {lapTimes.map((lapTime, idx) => {
-                    const isFastest = lapTime != null && fastestLapTime != null && lapTime === fastestLapTime;
-                    const isActiveLap = currentLap === idx + 1;
-                    const hasLapTime = lapTime != null;
-                    return (
-                      <div key={idx} className="lap-time-row">
-                        <span className={`lap-time-index${isActiveLap ? ' is-active' : ' is-inactive'}`}>{idx + 1}</span>
-                        <span className={`lap-time-value${hasLapTime ? ' has-time' : ' no-time'}`}>
-                          {hasLapTime ? formatTime(lapTime) : 'NO TIME'}
-                        </span>
-                        <span className={`lap-fastest-badge${isFastest ? ' visible' : ''}`} aria-hidden={!isFastest}>
-                          FASTEST
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
+              <OverlayLeaderboard
+                className="lap-times-overlay-visible"
+                showAnimation
+                tiltDeg={lapOverlayTilt}
+                counterCurrent={`LAP ${playerMaxLap}`}
+                counterTotal={TOTAL_LAPS}
+                rows={lapTimes.map((lapTime, idx) => {
+                  const isFastest = lapTime != null && fastestLapTime != null && lapTime === fastestLapTime;
+                  const isActiveLap = currentLap === idx + 1;
+                  const hasLapTime = lapTime != null;
+                  return {
+                    key: `lap-${idx + 1}`,
+                    index: idx + 1,
+                    value: hasLapTime ? formatTime(lapTime) : 'NO TIME',
+                    isActive: isActiveLap,
+                    hasTime: hasLapTime,
+                    badgeVisible: isFastest,
+                    badgeText: 'FASTEST',
+                  };
+                })}
+              />
+              <RaceSeriesOverlay
+                className="race-times-overlay-block"
+                showAnimation
+                tiltDeg={lapOverlayTilt}
+                currentRace={currentRace}
+                totalRaces={TOTAL_RACES}
+                entries={raceSeriesEntries}
+              />
             </>
           )}
 
@@ -782,7 +931,7 @@ export function GameView() {
           )}
 
           {raceState === 'finished' && !overlayMenuOpen && (
-            <div className="start-hint">
+            <div className={`start-hint${!isRivalMode ? ' start-hint-interactive' : ''}`}>
               {carDestroyed ? (
                 <>
                   <div className="finish-title">Car Destroyed</div>
@@ -800,10 +949,14 @@ export function GameView() {
                 </>
               ) : (
                 <>
-                  <div className="finish-title">Race Complete</div>
+                  <div className="finish-title">{currentRace < TOTAL_RACES ? `Race ${currentRace} Complete` : 'Series Complete'}</div>
                   <div className="finish-total">Total: {formatTime(totalRaceTime)}</div>
-                  {bestLap != null && <div className="finish-best">Best Lap: {formatTime(bestLap)}</div>}
-                  <div className="finish-restart">Press Space to restart &middot; Esc for menu</div>
+                  {raceFastestLap != null && <div className="finish-best finish-best-fastest">Fastest Lap: {formatTime(raceFastestLap)}</div>}
+                  <LapQualityDots lapStates={currentRaceLapStates} />
+                  <MenuButton className="finish-next-race-btn" onClick={handleStartNextRace}>
+                    {currentRace < TOTAL_RACES ? 'Start next race' : 'Restart series'}
+                  </MenuButton>
+                  <div className="finish-restart">Press Space to {currentRace < TOTAL_RACES ? 'start next race' : 'restart series'} &middot; Esc for menu</div>
                 </>
               )}
             </div>
@@ -876,7 +1029,7 @@ export function GameView() {
           </div>
 
           {toastMessage && (
-            <div className="toast" key={toastMessage}>{toastMessage}</div>
+            <TeamRadioToast key={toastMessage} message={toastMessage} />
           )}
         </>
       )}

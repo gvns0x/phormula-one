@@ -622,6 +622,83 @@
   animation: lap-overlay-enter 1s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+.race-times-overlay-block {
+  animation: lap-overlay-enter 1s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.race-times-overlay-block .lap-times-overlay {
+  top: 23.3rem;
+}
+
+.race-series-overlay .lap-counter {
+  margin-bottom: 0.65rem;
+}
+
+.race-series-entry {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  padding: 0.45rem 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.race-series-entry:first-of-type {
+  border-top: none;
+  padding-top: 0;
+}
+
+.race-series-num {
+  font-family: 'Audiowide', cursive;
+  width: 1rem;
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 1);
+  opacity: 0.44;
+  flex-shrink: 0;
+  line-height: 1.25;
+}
+
+.race-series-num.is-active {
+  opacity: 1;
+}
+
+.race-series-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.race-series-total {
+  font-family: var(--font-number);
+  font-size: 0.78rem;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.95);
+  line-height: 1.2;
+}
+
+.race-series-fastest {
+  font-family: var(--font-number);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  font-variant-numeric: tabular-nums;
+  color: rgb(190, 158, 255);
+  line-height: 1.2;
+}
+
+.race-series-clean {
+  font-family: var(--font-number);
+  font-size: 0.65rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.55);
+  line-height: 1.2;
+}
+
 .lap-counter {
   font-family: 'Audiowide', cursive;
   font-size: 0.9rem;
@@ -642,6 +719,7 @@
 }
 
 .lap-time-row {
+  position: relative;
   display: flex;
   align-items: center;
   min-width: 100px;
@@ -709,6 +787,28 @@
   opacity: 1;
 }
 
+.lap-quality-dots {
+  display: flex;
+  align-items: center;
+  gap: 0.42rem;
+  margin-top: 0.7rem;
+}
+
+.lap-quality-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14) inset;
+}
+
+.lap-quality-dot.is-clean {
+  background: #00ff88;
+}
+
+.lap-quality-dot.is-dirty {
+  background: rgba(255, 68, 68, 0.85);
+}
+
 /* Race Finish */
 
 .finish-title {
@@ -730,6 +830,10 @@
   font-size: 1rem;
   opacity: 0.7;
   animation: hint-pulse 2s ease-in-out infinite;
+}
+
+.finish-best-fastest {
+  color: rgb(190, 158, 255);
 }
 
 /* F1 Starting Lights */
@@ -789,6 +893,17 @@
   color: rgba(255, 255, 255, 0.8);
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
   pointer-events: none;
+}
+
+.start-hint-interactive {
+  pointer-events: auto;
+}
+
+.finish-next-race-btn {
+  margin-top: 0.8rem;
+  width: auto;
+  min-width: 220px;
+  text-align: center;
 }
 
 .start-hint:not(:has(.finish-title)) {
@@ -959,9 +1074,10 @@
 
 .damage-bar-track {
   width: 80px;
-  height: 5px;
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: 3px;
+  height: 8px;
+  background: var(--bg-glass);
+  backdrop-filter: var(--glass-blur);
+  border-radius: 100px;
   overflow: hidden;
 }
 
@@ -971,25 +1087,3 @@
   transition: width 0.2s ease, background-color 0.3s ease;
 }
 
-/* Toast */
-
-.toast {
-  position: absolute;
-  bottom: 2rem;
-  left: 2rem;
-  padding: 0.6rem 1.2rem;
-  background: rgba(0, 0, 0, 0.75);
-  color: white;
-  font-size: 0.9rem;
-  font-weight: 500;
-  border-radius: 6px;
-  pointer-events: none;
-  animation: toast-fade 3s ease forwards;
-}
-
-@keyframes toast-fade {
-  0% { opacity: 0; transform: translateY(8px); }
-  10% { opacity: 1; transform: translateY(0); }
-  80% { opacity: 1; }
-  100% { opacity: 0; }
-}

@@ -2,7 +2,7 @@ export function CarStatus({ damage }) {
   const d = Math.max(0, Math.min(damage ?? 0, 1));
   const health = 1 - d;
   const hue = 120 * (1 - d);
-  const color = `hsl(${hue}, 100%, 50%)`;
+  const color = `hsl(${hue}, 80%, 50%)`;
 
   return (
     <div className="car-status">
