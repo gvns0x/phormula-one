@@ -1,0 +1,73 @@
+/* Car Status — circular health ring */
+
+.car-status-tooltip {
+  width: 95px;
+  height: 95px;
+  flex-shrink: 0;
+}
+
+.car-status {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.car-status-gauge {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.car-status-ring-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.car-status-ring-track {
+  stroke: rgba(255, 255, 255, 0.14);
+  stroke-width: 2;
+}
+
+.car-status-ring-progress {
+  transition: stroke-dasharray 0.2s ease, stroke 0.3s ease;
+}
+
+.car-status-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.05rem;
+  padding-top: 0.1rem;
+  pointer-events: none;
+}
+
+.car-status-heart {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+}
+
+.car-status-pct {
+  font-size: 1.05rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  transition: color 0.3s ease;
+}
+
+.car-status-label {
+  font-size: 0.55rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: capitalize;
+  color: rgba(200, 200, 200, 0.85);
+  line-height: 1;
+}

@@ -824,9 +824,9 @@
   bottom: 1.5rem;
   right: 1.5rem;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  gap: 0.5rem;
+  gap: 2rem;
   pointer-events: none;
 }
 
@@ -835,34 +835,3 @@
   height: 160px;
   pointer-events: none;
 }
-
-/* Car Status */
-
-.car-status {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.35rem;
-}
-
-.car-chassis {
-  width: 40px;
-  height: 80px;
-  filter: drop-shadow(0 0 4px currentColor);
-}
-
-.damage-bar-track {
-  width: 80px;
-  height: 8px;
-  background: var(--bg-glass);
-  backdrop-filter: var(--glass-blur);
-  border-radius: 100px;
-  overflow: hidden;
-}
-
-.damage-bar-fill {
-  height: 100%;
-  border-radius: 3px;
-  transition: width 0.2s ease, background-color 0.3s ease;
-}
-
