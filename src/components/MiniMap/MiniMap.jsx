@@ -1,4 +1,5 @@
 import { useRef, useEffect, useMemo } from 'react';
+import './MiniMap.css';
 
 const SIZE = 160;
 const PAD = 12;

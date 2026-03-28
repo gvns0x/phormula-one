@@ -28,7 +28,7 @@
 }
 
 .car-status-ring-track {
-  stroke: rgba(255, 255, 255, 0.14);
+  stroke: var(--bg-glass);
   stroke-width: 2;
 }
 
@@ -56,11 +56,11 @@
 
 .car-status-pct {
   font-size: 1.05rem;
-  font-weight: 600;
+  font-weight: 500;
   font-variant-numeric: tabular-nums;
-  line-height: 1.1;
   letter-spacing: -0.02em;
   transition: color 0.3s ease;
+  font-family: var(--font-fast);
 }
 
 .car-status-label {

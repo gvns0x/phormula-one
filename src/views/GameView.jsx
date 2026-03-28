@@ -3,7 +3,7 @@ import { createGameEngine } from '../game/GameEngine';
 import { MAX_RPM } from '../game/gearbox';
 import { useControllerSync } from '../networking/useControllerSync';
 import { DevToolsPanel } from '../components/DevToolsPanel';
-import { MiniMap } from '../components/MiniMap';
+import { MiniMap } from '../components/MiniMap/MiniMap.jsx';
 import { CarStatus } from '../components/CarStatus/CarStatus.jsx';
 import { MenuButton } from '../components/MenuButton';
 import { OverlayLeaderboard } from '../components/OverlayLeaderboard/OverlayLeaderboard';

@@ -45,7 +45,6 @@ export function CarStatus({ damage }) {
             <span className="car-status-pct" style={{ color }}>
               {pct}%
             </span>
-            <span className="car-status-label">Health</span>
           </div>
         </div>
       </div>

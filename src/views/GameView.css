@@ -829,9 +829,3 @@
   gap: 2rem;
   pointer-events: none;
 }
-
-.mini-map {
-  width: 160px;
-  height: 160px;
-  pointer-events: none;
-}
