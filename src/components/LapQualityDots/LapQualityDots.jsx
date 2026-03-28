@@ -8,8 +8,8 @@ function lapQualityModifier(state) {
 }
 
 function lapQualityTooltipText(state) {
-  if (state === true) return 'Clean lap no damage';
-  if (state === false) return 'Dirty lap had some damage';
+  if (state === true) return 'Clean lap – no damage';
+  if (state === false) return 'Dirty lap – some damage';
   return 'Complete lap to view lap quality';
 }
 
