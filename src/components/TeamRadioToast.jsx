@@ -1,7 +1,8 @@
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import './TeamRadioToast.css';
 
-const BAR_COUNT = 12;
+const TOAST_DURATION_MS = 5200;
+const BAR_COUNT = 17;
 
 function RadioVisualizer() {
   const barsRef = useRef([]);
@@ -50,8 +51,27 @@ function RadioVisualizer() {
   );
 }
 
-export function TeamRadioToast({ message, subtitle, className = '', tiltDeg = 0 }) {
-  const rootClass = ['team-radio-toast', className].filter(Boolean).join(' ');
+export function TeamRadioToast({ message, subtitle, className = '', tiltDeg = 0, onDismiss }) {
+  const [exiting, setExiting] = useState(false);
+  const panelRef = useRef(null);
+
+  useEffect(() => {
+    setExiting(false);
+    const t = setTimeout(() => setExiting(true), TOAST_DURATION_MS);
+    return () => clearTimeout(t);
+  }, [message]);
+
+  const handleAnimEnd = useCallback(
+    (e) => {
+      if (e.target !== panelRef.current) return;
+      if (exiting) onDismiss?.();
+    },
+    [exiting, onDismiss]
+  );
+
+  const rootClass = ['team-radio-toast', exiting ? 'team-radio-toast--exiting' : '', className]
+    .filter(Boolean)
+    .join(' ');
 
   return (
     <div className="team-radio-toast-anchor">
@@ -61,7 +81,7 @@ export function TeamRadioToast({ message, subtitle, className = '', tiltDeg = 0 
           transform: `perspective(1000px) rotateY(${tiltDeg.toFixed(1)}deg) rotateZ(${(tiltDeg * 0.1).toFixed(1)}deg)`,
         }}
       >
-        <div className={rootClass}>
+        <div ref={panelRef} className={rootClass} onAnimationEnd={handleAnimEnd}>
           <div className="team-radio-toast__header">
             <span className="team-radio-toast__label">Radio</span>
             <RadioVisualizer />

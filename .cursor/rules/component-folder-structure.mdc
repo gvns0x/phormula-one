@@ -1,0 +1,47 @@
+---
+description: New React components live in src/components as a folder with matching JSX and CSS
+alwaysApply: true
+---
+
+# Component folder structure
+
+When the user asks to **create** or **add** a component (or equivalent), use this layout. Do not add loose `Component.jsx` / `Component.css` pairs directly under `components/` unless they explicitly ask for that.
+
+## Location
+
+- Use the existing **`src/components`** directory in this repo. If it is missing, create **`src/components`** first, then add the component inside it.
+
+## Per-component folder
+
+For a component named `MyWidget`:
+
+```
+src/components/MyWidget/
+  MyWidget.jsx
+  MyWidget.css
+```
+
+- Folder name: **PascalCase**, same as the component name.
+- **Two files**: `ComponentName.jsx` and `ComponentName.css` with the same basename as the folder.
+- In `MyWidget.jsx`, import styles with a relative path, e.g. `import './MyWidget.css';`
+
+## Imports from elsewhere
+
+Import from the folder entry file, e.g.:
+
+```javascript
+import MyWidget from './components/MyWidget/MyWidget.jsx';
+```
+
+(or the project’s usual extension/path style if an alias is used).
+
+## Examples
+
+```text
+✅ src/components/TeamRadioToast/TeamRadioToast.jsx
+✅ src/components/TeamRadioToast/TeamRadioToast.css
+
+❌ src/components/TeamRadioToast.jsx + TeamRadioToast.css (siblings only, no folder)
+```
+
+When migrating or touching legacy flat files, only move to the folder pattern if the user asks.

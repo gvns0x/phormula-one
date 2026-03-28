@@ -26,13 +26,20 @@
   border-radius: var(--radius);
   border: var(--border-glass);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+
+.team-radio-toast:not(.team-radio-toast--exiting) {
   animation: team-radio-slide-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.team-radio-toast.team-radio-toast--exiting {
+  animation: team-radio-slide-out 0.35s cubic-bezier(0.55, 0, 1, 0.45) forwards;
 }
 
 .team-radio-toast__header {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: .2rem;
   margin-bottom: 0.65rem;
 }
 
@@ -95,5 +102,16 @@
   to {
     opacity: 1;
     transform: translateX(0);
+  }
+}
+
+@keyframes team-radio-slide-out {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(calc(100% + 1.5rem));
   }
 }

@@ -1,0 +1,44 @@
+.tooltip-root {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  outline: none;
+  /* Parent HUD uses pointer-events: none so the game canvas keeps receiving input; re-enable for this hit target. */
+  pointer-events: auto;
+}
+
+.tooltip-root:focus-visible {
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.35);
+  border-radius: 50%;
+}
+
+.tooltip-bubble {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 6px;
+  padding: 0.35rem 0.55rem;
+  z-index: 50;
+  width: 100px;
+  font-family: var(--font-slow);
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.92);
+  text-align: center;
+  pointer-events: auto;
+  background: var(--bg-glass);
+  border: var(--border-glass);
+  border-radius: 6px;
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  box-shadow: var(--shadow); 
+  white-space: normal;
+}
+
+@media (hover: hover) {
+  .tooltip-bubble {
+    transition: opacity 0.12s ease-out;
+  }
+}

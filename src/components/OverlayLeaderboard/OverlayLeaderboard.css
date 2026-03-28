@@ -1,0 +1,130 @@
+/* Lap times overlay */
+
+.lap-times-overlay {
+  position: absolute;
+  top: 7.2rem;
+  left: 1.5rem;
+  background-color: var(--bg-glass);
+  padding: 1rem;
+  border: var(--border-glass);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-radius: var(--radius);
+  pointer-events: none;
+  z-index: 10;
+  transform-origin: left center;
+  transform-style: preserve-3d;
+  will-change: transform;
+  transition: transform 0.08s linear;
+  box-shadow: var(--shadow-glass);
+}
+
+.lap-times-overlay-visible {
+  animation: lap-overlay-enter 1s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.lap-counter {
+  font-family: 'Audiowide', cursive;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: white;
+  border-radius: var(--radius);
+  letter-spacing: 0.1em;
+  pointer-events: none;
+  margin-bottom: 1rem;
+}
+
+.lap-counter-current {
+  opacity: 1;
+}
+
+.lap-counter-total {
+  opacity: 0.44;
+}
+
+.lap-time-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 100px;
+  gap: 0.55rem;
+  padding: 0.6rem 0;
+  font-family: 'JetBrains Mono', 'SF Mono', 'Consolas', monospace;
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 1);
+}
+
+.lap-time-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.lap-time-index {
+  font-family: 'Audiowide', cursive;
+  width: 1rem;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 1);
+}
+
+.lap-time-index.is-active {
+  opacity: 1;
+}
+
+.lap-time-index.is-inactive {
+  opacity: 0.44;
+}
+
+.lap-time-value-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.lap-time-value {
+  flex: 0 1 auto;
+  opacity: 1;
+  font-family: var(--font-number);
+  font-weight: 500;
+  width: 70px;
+}
+
+.lap-time-value.no-time {
+  opacity: 0.44;
+  font-weight: 500;
+}
+
+.lap-fastest-badge {
+  position: absolute;
+  right: -83.5px;
+  padding: 0 .6rem 0 0.4rem;
+  height: 22px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0px var(--radius) var(--radius) 0px;
+  font-size: 0.6rem;
+  line-height: 1;
+  color: #fff;
+  background: rgb(126, 60, 255, .65);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  opacity: 0;
+  font-family: var(--font-fast);
+}
+
+.lap-fastest-badge.visible {
+  opacity: 1;
+}
+
+@keyframes lap-overlay-enter {
+  0% {
+    transform: translateX(-38px);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}

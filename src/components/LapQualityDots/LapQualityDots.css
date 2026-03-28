@@ -1,0 +1,32 @@
+.lap-quality-dots {
+  display: flex;
+  align-items: center;
+  margin-top: 0.7rem;
+}
+
+.lap-quality-dots--inline {
+  margin-top: 0;
+  flex-shrink: 0;
+}
+
+.lap-quality-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  box-sizing: border-box;
+}
+
+.lap-quality-dot.is-unknown {
+  background: var(--bg-glass);
+  border: var(--border-glass);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+}
+
+.lap-quality-dot.is-clean {
+  background: #00ff88;
+}
+
+.lap-quality-dot.is-dirty {
+  background: rgba(255, 68, 68, 0.85);
+}

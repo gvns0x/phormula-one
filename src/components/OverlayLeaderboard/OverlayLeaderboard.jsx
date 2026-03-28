@@ -1,3 +1,6 @@
+import { LapQualityDots } from '../LapQualityDots/LapQualityDots';
+import './OverlayLeaderboard.css';
+
 export function OverlayLeaderboard({
   className = '',
   title,
@@ -34,8 +37,17 @@ export function OverlayLeaderboard({
             <span className={`lap-time-index${row.isActive ? ' is-active' : ' is-inactive'}`}>
               {row.index}
             </span>
-            <span className={`lap-time-value${row.hasTime ? ' has-time' : ' no-time'}`}>
-              {row.value}
+            <span className="lap-time-value-wrap">
+              <span className={`lap-time-value${row.hasTime ? ' has-time' : ' no-time'}`}>
+                {row.value}
+              </span>
+              {row.lapQualityDots != null && row.lapQualityDots.length > 0 && (
+                <LapQualityDots
+                  lapStates={row.lapQualityDots}
+                  className="lap-quality-dots--inline"
+                  startLapIndex={row.index - 1}
+                />
+              )}
             </span>
             <span className={`lap-fastest-badge${row.badgeVisible ? ' visible' : ''}`} aria-hidden={!row.badgeVisible}>
               {row.badgeText ?? 'FASTEST'}
